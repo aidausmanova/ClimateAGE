@@ -1,0 +1,17 @@
+.idea/*
+
+test.py
+test.ipynb
+logs/
+outputs/
+data/GCMD_plus.json
+data/taxonomy_indexed_ver1.json
+data/taxonomy_indexed_ver2.json
+data/ifrs_index_llmdefin_NV-Embed-v2.json
+
+*.log
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
