@@ -1,11 +1,16 @@
+import os
 import json
 import torch
 import uuid
+import numpy as np
 from typing import List, Optional
+from pathlib import Path
 
 from transformers import AutoModel, AutoTokenizer
 from llama_index.core import VectorStoreIndex, Document, Settings
 from llama_index.core.embeddings import BaseEmbedding
+
+from src.embedding_model import NVEmbedV2EmbeddingModel
 
 queries = [
     "Do the environmental/sustainability targets set by the company align with external climate change adaptation goals/targets?",
@@ -26,15 +31,19 @@ queries = [
     ]
 
 
-def get_taxonomy_corpus(is_llama_doc=True):
-    with open("data/ifrs_taxonomy_enriched-Llama70B.json", "r") as f:
+def get_taxonomy_corpus(taxonomy_path, is_llama_doc=True, include_related_terms=False):
+    with open(taxonomy_path, "r") as f:
         taxonomy_data = json.load(f)
     
     taxonomy_documents = []
-    if is_llama_doc:
-        for uid, taxonomy_metadata in taxonomy_data.items():
-            related_terms = ", ".join(taxonomy_metadata['relatedTerms'])
+    metadata = []
+    for uid, taxonomy_metadata in taxonomy_data.items():
+        if include_related_terms:
+            related_terms = ", ".join(taxonomy_metadata['relatedTerms'][:30])
+        else:
+            related_terms = ""
 
+        if is_llama_doc:
             taxonomy_documents.append(
                 Document(
                     text = f"Label: {taxonomy_metadata['prefLabel']}\n Definition: {taxonomy_metadata['enriched_definition']}\n Related terms: {related_terms}",
@@ -49,11 +58,42 @@ def get_taxonomy_corpus(is_llama_doc=True):
                     }
                 )
             )
-    else:
-        for d in taxonomy_data.values():
-            taxonomy_documents.append(f"Label: {d['prefLabel']}\n Definition: {d['enriched_definition']}")
+        else:
+            taxonomy_documents.append(f"Label: {taxonomy_metadata['prefLabel']}\n Definition: {taxonomy_metadata['enriched_definition']}\n Related terms: {related_terms}")
+            metadata.append(
+                {
+                    "uuid": uid,
+                    "label": taxonomy_metadata['prefLabel'],
+                    "tags": taxonomy_metadata['tags'],
+                    "definition": taxonomy_metadata['enriched_definition'],
+                    "related_terms": taxonomy_metadata['relatedTerms'],
+                    "path_id": taxonomy_metadata['path_id'],
+                    "path_label": taxonomy_metadata['path_label']
+                }
+            )
 
-    return taxonomy_documents
+    return taxonomy_documents, metadata
+
+def save_embeddings_pytorch(embeddings, entities, save_dir):
+    Path(save_dir).mkdir(exist_ok=True)
+    
+    # Convert to numpy if tensor
+    if torch.is_tensor(embeddings):
+        embeddings_np = embeddings.cpu().numpy()
+    else:
+        embeddings_np = embeddings
+    
+    # Save embeddings and metadata separately
+    np.save(f"{save_dir}/embeddings.npy", embeddings_np)
+    
+    with open(f"{save_dir}/metadata.json", 'w') as f:
+        json.dump({
+            'entities': entities,
+            'embedding_dim': embeddings_np.shape[1],
+            'num_embeddings': embeddings_np.shape[0]
+        }, f, indent=2)
+    
+    print(f"Saved to {save_dir}/embeddings.npy and metadata.json")
 
 
 class NVidiaEmbedder(BaseEmbedding):
@@ -125,20 +165,33 @@ class NVidiaEmbedder(BaseEmbedding):
 
 
 if __name__ == "__main__":
-    # taxonomy_documents = get_taxonomy_corpus()
-    taxonomy_documents = []
-    for query in queries:
-        taxonomy_documents.append(
-                Document(
-                    text = f"Query: {query}",
-                )
-            )
+    llama_index = False
+    taxonomy_documents, taxonomy_metadata = get_taxonomy_corpus("data/ifrs_taxonomy_enriched-Llama70B.json", 
+                                             is_llama_doc=llama_index, include_related_terms=True)
+    # taxonomy_documents = []
+    # for query in queries:
+    #     taxonomy_documents.append(
+    #             Document(
+    #                 text = f"Query: {query}",
+    #             )
+    #         )
     print("[INFO] Taxonomy loaded")
+    
+    if llama_index:
 
-    embed_model = NVidiaEmbedder(device="cuda")
-    Settings.embed_model = embed_model
+        embed_model = NVidiaEmbedder(device="cuda")
+        Settings.embed_model = embed_model
 
-    print("[INFO] Start generating embeddings")
-    index = VectorStoreIndex.from_documents(taxonomy_documents, embed_model=Settings.embed_model, show_progress=True)
-    # index.storage_context.persist(persist_dir="data/ifrs_enriched_Llama70B_llmdefin_NV-Embed-v2")
-    index.storage_context.persist(persist_dir="data/questions_Llama70B_llmdefin_NV-Embed-v2")
+        print("[INFO] Start generating embeddings")
+        index = VectorStoreIndex.from_documents(taxonomy_documents, embed_model=Settings.embed_model, show_progress=True)
+        index.storage_context.persist(persist_dir="data/ifrs_enriched_Llama70B_llmdefin_NV-Embed-v2")
+        # index.storage_context.persist(persist_dir="data/questions_Llama70B_llmdefin_NV-Embed-v2")
+    else:
+        embed_model = NVEmbedV2EmbeddingModel(embedding_model_name="nvidia/NV-Embed-v2")
+        embeddings = embed_model.batch_encode(taxonomy_documents, 
+                                              taxonomy_metadata, 
+                                              save_embeddings=True, 
+                                              save_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
+        
+    print("Finihsed execution")
+

@@ -8,5 +8,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export CUDA_VISIBLE_DEVICES=0
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
-python create_embeddings.py
+# python create_embeddings.py
 # python enrich_taxonomy.py
+
+python extract_nouns.py

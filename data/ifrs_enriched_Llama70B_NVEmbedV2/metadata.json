@@ -1,0 +1,1102 @@
+[
+  {
+    "uuid": "5d572e35-d7ca-4bbd-bd96-8a49428e3529",
+    "label": "ORGANIZATION",
+    "tags": [],
+    "definition": "An entity that prepares financial statements and climate-related disclosures, such as a company, institution, or public body.",
+    "related_terms": [],
+    "path_id": [],
+    "path_label": []
+  },
+  {
+    "uuid": "198613cd-3416-4f99-a6a7-e5149365a887",
+    "label": "GOVERNANCE",
+    "tags": [],
+    "definition": "The organizational framework and processes for overseeing and managing climate-related responsibilities, risks, and decisions.",
+    "related_terms": [],
+    "path_id": [
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "fa251aaa-ce8b-4526-af32-d3114a248385",
+    "label": "STRATEGY",
+    "tags": [],
+    "definition": "Organization’s plan for addressing climate-related risks and opportunities to achieve long-term objectives.",
+    "related_terms": [],
+    "path_id": [
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "16b223ba-19c8-436f-b10b-5dd568cf77e7",
+    "label": "FINANCIAL IMPACT",
+    "tags": [],
+    "definition": "The financial consequences of climate-related risks and opportunities on an organization’s revenues, costs, asset values, and cash flows.",
+    "related_terms": [],
+    "path_id": [
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "0065aa62-ca77-4d95-971a-42dd948b7721",
+    "label": "RISK",
+    "tags": [],
+    "definition": "A potential negative financial or operational impact on an organization arising from climate-related factors or transitions.",
+    "related_terms": [],
+    "path_id": [
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "208b2fb0-09e3-424f-87d9-d1b9bbb98b40",
+    "label": "OPPORTUNITY",
+    "tags": [],
+    "definition": "A potential positive outcome or benefit for an organization due to climate change or the transition to a low-carbon economy.",
+    "related_terms": [],
+    "path_id": [
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "0c62e37a-6c3b-45cb-9821-cf4a0db3060c",
+    "label": "RESOURCE USE",
+    "tags": [],
+    "definition": "Utilization of natural resources such as energy, water, raw materials, or land by an organization in its operations or value chains.",
+    "related_terms": [],
+    "path_id": [
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "49d4581e-2f41-416d-9ce2-62ba43beb8d2",
+    "label": "GOVERNANCE RISK OVERSIGHT",
+    "tags": [
+      "IFRS S2 6",
+      "GRI 2",
+      "TCFD",
+      "ESRS E1"
+    ],
+    "definition": "Oversight of climate-related risks and opportunities by boards or management, encompassing roles, competencies, and decision-making integration.",
+    "related_terms": [
+      "board oversight",
+      "climate governance",
+      "board responsibilities",
+      "management accountability",
+      "climate competencies",
+      "ESG governance",
+      "risk oversight",
+      "climate committee",
+      "governance structure",
+      "board mandate",
+      "climate expertise",
+      "oversight mechanisms",
+      "governance framework",
+      "executive compensation climate targets",
+      "board climate training"
+    ],
+    "path_id": [
+      "198613cd-3416-4f99-a6a7-e5149365a887",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "GOVERNANCE",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "ed17a699-d549-4bf7-b0b4-8dedfb167f0f",
+    "label": "PARTNER",
+    "tags": [],
+    "definition": "An external organization, stakeholder, or collaborator working with an entity to advance specific sustainability or climate-related goals.",
+    "related_terms": [
+      "collaboration",
+      "collaborator",
+      "stakeholder",
+      "strategic partner",
+      "partnership",
+      "supplier",
+      "industry association",
+      "supply chain partner"
+    ],
+    "path_id": [
+      "198613cd-3416-4f99-a6a7-e5149365a887",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "GOVERNANCE",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "b13d102b-377d-4732-9f66-ba21219b89b0",
+    "label": "TARGET",
+    "tags": [],
+    "definition": "A specific, measurable, time-bound climate-related goal set by an organization to reduce emissions, adapt to climate risks, or seize climate opportunities.",
+    "related_terms": [
+      "goal alignment",
+      "external targets",
+      "net-zero target",
+      "adaptation goal",
+      "organizational goals",
+      "metrics and targets",
+      "objective",
+      "science-based targets",
+      "goal",
+      "aim",
+      "commitment",
+      "milestone"
+    ],
+    "path_id": [
+      "fa251aaa-ce8b-4526-af32-d3114a248385",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "STRATEGY",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "43b2e345-2f75-4544-b731-9f2bd07d6b45",
+    "label": "INITIATIVE",
+    "tags": [],
+    "definition": "A specific action, activity, or project implemented by an organization to achieve climate or sustainability goals.",
+    "related_terms": [
+      "project",
+      "program",
+      "action plan",
+      "activity",
+      "pilot project",
+      "adaptation project",
+      "climate action"
+    ],
+    "path_id": [
+      "fa251aaa-ce8b-4526-af32-d3114a248385",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "STRATEGY",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "3d15bc7f-5a03-4bbe-87ff-bf983636af18",
+    "label": "BUSINESS MODEL AND VALUE CHAIN",
+    "tags": [
+      "IFRS S2 13",
+      "GRI 2",
+      "ESRS E1"
+    ],
+    "definition": "Impacts of climate-related risks and opportunities on an organization’s business model, encompassing its value chain, operations, and revenue streams.",
+    "related_terms": [
+      "value chain impacts",
+      "supply chain effects",
+      "business model transformation",
+      "upstream impacts",
+      "downstream impacts",
+      "value creation",
+      "revenue model changes",
+      "operational model",
+      "supply chain disruption",
+      "value chain resilience",
+      "sourcing impacts",
+      "distribution impacts",
+      "stakeholder impacts",
+      "value proposition changes",
+      "business operations"
+    ],
+    "path_id": [
+      "fa251aaa-ce8b-4526-af32-d3114a248385",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "STRATEGY",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "540655ee-4fab-46e4-8ce9-16bb05b8ae15",
+    "label": "STRATEGY AND DECISION-MAKING",
+    "tags": [
+      "IFRS S2 14",
+      "GRI 2",
+      "TCFD",
+      "ESRS E1"
+    ],
+    "definition": "Effects of climate-related risks and opportunities on strategic choices, resource allocation, and transition plans, shaping an organization's overall strategy and decision-making.",
+    "related_terms": [
+      "climate strategy",
+      "strategic planning",
+      "resource allocation",
+      "capital allocation",
+      "investment decisions",
+      "divestment strategy",
+      "acquisition strategy",
+      "R&D allocation",
+      "mitigation strategy",
+      "adaptation strategy",
+      "business transformation",
+      "strategic priorities",
+      "climate targets",
+      "workforce planning",
+      "facility relocation"
+    ],
+    "path_id": [
+      "fa251aaa-ce8b-4526-af32-d3114a248385",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "STRATEGY",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "83d736ed-9b2f-4774-8182-7ee2ab56e844",
+    "label": "CLIMATE RESILIENCE",
+    "tags": [
+      "IFRS S2 22",
+      "TCFD",
+      "ESRS E1"
+    ],
+    "definition": "The capacity of an entity to adapt to climate-related changes, manage climate-related risks, and capitalize on climate-related opportunities, encompassing both transition and physical risks.",
+    "related_terms": [
+      "climate adaptation",
+      "adaptation planning",
+      "adaptation actions",
+      "adaptation measures",
+      "adaptation definitions",
+      "adaptive capacity",
+      "climate adaptation",
+      "resilience assessment",
+      "strategic resilience",
+      "operational resilience",
+      "business continuity",
+      "risk management capacity",
+      "flexibility",
+      "robustness",
+      "recovery capacity",
+      "climate preparedness",
+      "adaptation measures",
+      "resilience building",
+      "vulnerability reduction",
+      "stress testing"
+    ],
+    "path_id": [
+      "fa251aaa-ce8b-4526-af32-d3114a248385",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "STRATEGY",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "d75222a1-b043-4d5e-a19c-b6ac4cdf0c2d",
+    "label": "SCENARIO ANALYSIS",
+    "tags": [
+      "IFRS S2 22",
+      "TCFD",
+      "ESRS E1"
+    ],
+    "definition": "A structured process to identify and assess a range of potential outcomes of future climate-related events and their impact on an organization's strategy and operations.",
+    "related_terms": [
+      "climate scenarios",
+      "scenario planning",
+      "IEA scenarios",
+      "IPCC scenarios",
+      "IPCC trajectories",
+      "NGFS scenarios",
+      "RCP scenarios",
+      "SSP scenarios",
+      "1.5°C scenario",
+      "2°C scenario",
+      "3°C scenario",
+      "stress testing",
+      "sensitivity analysis",
+      "future pathways",
+      "warming scenarios",
+      "transition pathways"
+    ],
+    "path_id": [
+      "fa251aaa-ce8b-4526-af32-d3114a248385",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "STRATEGY",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "afdeef1f-06d0-4ef9-a33e-b54ea725fc2f",
+    "label": "CLIMATE TRANSITION PLAN",
+    "tags": [
+      "IFRS S2 9",
+      "GRI 2",
+      "ESRS E1",
+      "TCFD"
+    ],
+    "definition": "A strategic plan outlining a company's specific targets, actions, and resources to transition to a lower-carbon economy.",
+    "related_terms": [
+      "decarbonization plan",
+      "net zero strategy",
+      "emission reduction plan",
+      "transition strategy",
+      "climate action plan",
+      "carbon neutrality plan",
+      "low-carbon transition",
+      "decarbonization pathway",
+      "transition roadmap",
+      "net zero roadmap",
+      "climate mitigation plan",
+      "Paris-aligned strategy",
+      "science-based targets",
+      "carbon reduction strategy",
+      "transition finance"
+    ],
+    "path_id": [
+      "fa251aaa-ce8b-4526-af32-d3114a248385",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "STRATEGY",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "7e99ebc8-1d9f-4f1f-8b11-1468851c0c60",
+    "label": "RISK MANAGEMENT PROCESS",
+    "tags": [
+      "IFRS S2 24",
+      "GRI 2",
+      "TCFD",
+      "ESRS E1"
+    ],
+    "definition": "A systematic approach used by an entity to identify, assess, prioritize, and monitor climate-related risks, incorporating climate-related scenario analysis to inform risk identification and assessment of likelihood and magnitude of risk effects.",
+    "related_terms": [
+      "methodology",
+      "assessment methodology",
+      "identification methodology",
+      "due diligence",
+      "risk identification",
+      "risk assessment",
+      "risk prioritization",
+      "risk monitoring",
+      "risk evaluation",
+      "climate risk management",
+      "risk framework",
+      "risk methodology",
+      "risk analysis",
+      "risk screening",
+      "materiality assessment",
+      "likelihood assessment",
+      "impact assessment",
+      "risk magnitude",
+      "risk severity",
+      "scenario analysis",
+      "stress testing",
+      "sensitivity analysis",
+      "risk appetite",
+      "risk tolerance",
+      "risk mitigation",
+      "risk controls",
+      "risk register",
+      "risk heat map",
+      "risk matrix",
+      "enterprise risk management",
+      "ERM",
+      "integrated risk management",
+      "risk governance",
+      "risk reporting",
+      "risk metrics",
+      "KRIs",
+      "key risk indicators",
+      "risk dashboard",
+      "risk escalation",
+      "risk review",
+      "risk policies",
+      "risk procedures"
+    ],
+    "path_id": [
+      "0065aa62-ca77-4d95-971a-42dd948b7721",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "RISK",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "5684784f-5fa0-4b0b-9f1a-858feda7acf0",
+    "label": "CLIMATE-RELATED RISKS",
+    "tags": [
+      "IFRS S2 10",
+      "GRI 2",
+      "TCFD",
+      "ESRS E1",
+      "CDP"
+    ],
+    "definition": "Risks associated with transitioning to a lower-carbon economy and the physical impacts of climate change on an organization.",
+    "related_terms": [
+      "transition risks",
+      "physical risks",
+      "climate hazards",
+      "carbon risks",
+      "climate change risks",
+      "policy risks",
+      "technology risks",
+      "market risks",
+      "reputation risks",
+      "stranded assets",
+      "climate exposure",
+      "climate vulnerability",
+      "weather-related risks",
+      "regulatory risks",
+      "litigation risks"
+    ],
+    "path_id": [
+      "0065aa62-ca77-4d95-971a-42dd948b7721",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "RISK",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "04fd67c7-241d-4b25-ba6c-e541493363a2",
+    "label": "CLIMATE-RELATED TRANSITION RISKS",
+    "tags": [
+      "IFRS S2 29 (b)",
+      "GRI 201",
+      "TCFD",
+      "ESRS E1",
+      "CDP"
+    ],
+    "definition": "Risks arising from efforts to transition to a lower-carbon economy, encompassing policy, legal, technological, market, and reputational risks.",
+    "related_terms": [
+      "transition risk",
+      "policy risk",
+      "legal risk",
+      "technology risk",
+      "market risk",
+      "reputation risk",
+      "regulatory risk",
+      "carbon risk",
+      "policy changes",
+      "carbon regulations",
+      "emissions regulations",
+      "climate litigation",
+      "climate lawsuits",
+      "technology disruption",
+      "obsolescence risk",
+      "disruptive technology",
+      "market shifts",
+      "demand changes",
+      "consumer preferences",
+      "reputational damage",
+      "brand risk",
+      "stakeholder pressure",
+      "stranded assets",
+      "asset impairment",
+      "write-downs",
+      "competitiveness risk",
+      "product substitution",
+      "pricing pressure",
+      "decarbonization risk",
+      "low-carbon transition",
+      "energy transition",
+      "sectoral shifts",
+      "compliance costs",
+      "carbon cost exposure",
+      "fossil fuel phase-out"
+    ],
+    "path_id": [
+      "5684784f-5fa0-4b0b-9f1a-858feda7acf0",
+      "0065aa62-ca77-4d95-971a-42dd948b7721",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "CLIMATE-RELATED RISKS",
+      "RISK",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "95ec8feb-a360-46e7-8216-89f59221721d",
+    "label": "CLIMATE-RELATED PHYSICAL RISKS",
+    "tags": [
+      "IFRS S2 29 (c)",
+      "GRI 201",
+      "TCFD",
+      "ESRS E1",
+      "CDP"
+    ],
+    "definition": "Climate-related physical risks refer to event-driven and long-term shifts in climatic patterns, encompassing acute risks from weather events like storms, floods, drought, and heatwaves, as well as chronic risks from changes in precipitation, temperature, sea level rise, water scarcity, biodiversity loss, and soil productivity changes.",
+    "related_terms": [
+      "acute physical risks",
+      "chronic physical risks",
+      "extreme weather",
+      "floods",
+      "storms",
+      "hurricanes",
+      "droughts",
+      "heatwaves",
+      "wildfires",
+      "sea level rise",
+      "temperature changes",
+      "precipitation changes",
+      "water stress",
+      "coastal flooding",
+      "asset damage",
+      "supply chain disruption",
+      "operational disruption"
+    ],
+    "path_id": [
+      "5684784f-5fa0-4b0b-9f1a-858feda7acf0",
+      "0065aa62-ca77-4d95-971a-42dd948b7721",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "CLIMATE-RELATED RISKS",
+      "RISK",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "65e28764-99b8-4cd7-a31d-617b09669aa3",
+    "label": "CLIMATE-RELATED OPPORTUNITIES",
+    "tags": [
+      "IFRS S2 10",
+      "IFRS S2 29 (d)",
+      "GRI 2",
+      "GRI 201",
+      "TCFD",
+      "ESRS E1"
+    ],
+    "definition": "Positive effects from climate change mitigation and adaptation efforts, including resource efficiencies, low-emission energy adoption, new product and service development, market access, and supply chain resilience building.",
+    "related_terms": [
+      "green opportunities",
+      "climate adaptation benefits",
+      "resource efficiency",
+      "cost savings",
+      "renewable energy adoption",
+      "clean technology",
+      "green products",
+      "sustainable services",
+      "new markets",
+      "supply chain resilience",
+      "circular economy opportunities",
+      "energy efficiency gains",
+      "innovation opportunities",
+      "competitive advantages",
+      "green revenue streams"
+    ],
+    "path_id": [
+      "208b2fb0-09e3-424f-87d9-d1b9bbb98b40",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "OPPORTUNITY",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "a7ae61bf-d544-4ec5-8934-f2374f1e3777",
+    "label": "FINANCIAL POSITION, FINANCIAL PERFORMANCE AND CASH FLOWS",
+    "tags": [
+      "IFRS S2 15",
+      "GRI 201",
+      "ESRS E1",
+      "SASB"
+    ],
+    "definition": "Effects of climate-related risks and opportunities on an organization's financial position, financial performance, and cash flows, including their integration into financial planning.",
+    "related_terms": [
+      "financial impacts",
+      "climate financial effects",
+      "revenue impacts",
+      "cost impacts",
+      "asset values",
+      "liabilities",
+      "cash flow impacts",
+      "capital expenditure",
+      "operating expenses",
+      "financial planning",
+      "balance sheet impacts",
+      "income statement effects",
+      "financial materiality",
+      "climate-adjusted financials",
+      "financial projections"
+    ],
+    "path_id": [
+      "16b223ba-19c8-436f-b10b-5dd568cf77e7",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "FINANCIAL IMPACT",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "b44b1673-968e-4685-b1b8-c561b6bee2b2",
+    "label": "CARBON PRICING",
+    "tags": [
+      "IFRS S2 29 (f)",
+      "TCFD",
+      "CDP",
+      "ESRS E1"
+    ],
+    "definition": "A monetary value assigned by an entity to quantify the financial implications of climate-related decisions, such as investments, production, and consumption, considering future emissions-abatement costs and technological advancements.",
+    "related_terms": [
+      "internal carbon price",
+      "carbon tax",
+      "carbon fee",
+      "emissions trading",
+      "cap and trade",
+      "carbon cost",
+      "shadow carbon price",
+      "carbon levy",
+      "carbon tariff",
+      "carbon border adjustment",
+      "CBAM",
+      "EU ETS",
+      "emissions trading scheme",
+      "carbon allowances",
+      "carbon permits",
+      "price per tonne CO2",
+      "social cost of carbon",
+      "marginal abatement cost",
+      "carbon value",
+      "implicit carbon price",
+      "explicit carbon price",
+      "carbon pricing mechanism",
+      "carbon market price",
+      "compliance costs",
+      "carbon liabilities",
+      "stranded asset risk",
+      "emission allowance price",
+      "carbon price trajectory",
+      "carbon price assumption",
+      "abatement cost curve"
+    ],
+    "path_id": [
+      "16b223ba-19c8-436f-b10b-5dd568cf77e7",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "FINANCIAL IMPACT",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "15d3b31f-ba25-4d1f-9629-358b9214c09a",
+    "label": "CARBON CREDIT",
+    "tags": [
+      "IFRS S2 A",
+      "GHG Protocol"
+    ],
+    "definition": "A tradable unit representing one ton of CO2-equivalent emission reduction or removal, issued by a carbon crediting programme.",
+    "related_terms": [
+      "carbon offset",
+      "emissions reduction credit",
+      "carbon removal credit",
+      "voluntary carbon market",
+      "compliance carbon market",
+      "carbon trading",
+      "offset credits",
+      "verified carbon units",
+      "emission allowances",
+      "carbon registry",
+      "carbon retirement",
+      "carbon neutralization",
+      "offsetting",
+      "carbon markets",
+      "additionality"
+    ],
+    "path_id": [
+      "16b223ba-19c8-436f-b10b-5dd568cf77e7",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "FINANCIAL IMPACT",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "b3ccef14-afbf-4bfc-aabc-b057453c7ea4",
+    "label": "FINANCED EMISSIONS",
+    "tags": [
+      "IFRS S2 A",
+      "GHG Protocol"
+    ],
+    "definition": "Greenhouse gas emissions attributed to an entity's loans and investments in other companies or organizations.",
+    "related_terms": [
+      "portfolio emissions",
+      "investment emissions",
+      "Scope 3 Category 15",
+      "funded emissions",
+      "attributed emissions",
+      "investee emissions",
+      "loan portfolio emissions",
+      "asset-level emissions",
+      "PCAF methodology",
+      "carbon intensity of portfolio",
+      "financing emissions",
+      "lending emissions",
+      "equity emissions",
+      "debt emissions",
+      "financial sector emissions"
+    ],
+    "path_id": [
+      "16b223ba-19c8-436f-b10b-5dd568cf77e7",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "FINANCIAL IMPACT",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "023e9d37-5e1a-4c95-bbc7-f27e425a1725",
+    "label": "GREENHOUSE GASES",
+    "tags": [
+      "IFRS S2 29 (a)",
+      "GRI 305",
+      "SDG 3",
+      "SDG 12",
+      "SDG 13",
+      "SDG 15",
+      "ESRS E1",
+      "CDP"
+    ],
+    "definition": "Greenhouse gases refer to seven specific gases (CO2, CH4, N2O, HFCs, NF3, PFCs, and SF6) emitted by an organization's operations, including direct emissions (Scope 1), indirect energy-related emissions (Scope 2), and value chain emissions (Scope 3).",
+    "related_terms": [
+      "GHG emissions",
+      "carbon emissions",
+      "Scope 1 emissions",
+      "Scope 2 emissions",
+      "Scope 3 emissions",
+      "direct emissions",
+      "indirect emissions",
+      "value chain emissions",
+      "CO2 emissions",
+      "carbon dioxide",
+      "methane",
+      "CH4",
+      "nitrous oxide",
+      "N2O",
+      "fluorinated gases",
+      "F-gases",
+      "hydrofluorocarbons",
+      "HFCs",
+      "perfluorocarbons",
+      "PFCs",
+      "sulphur hexafluoride",
+      "SF6",
+      "nitrogen trifluoride",
+      "NF3",
+      "Kyoto gases",
+      "carbon footprint",
+      "emissions inventory",
+      "GHG accounting",
+      "emissions reporting",
+      "CO2 equivalent",
+      "CO2e",
+      "tCO2e",
+      "carbon intensity",
+      "emissions factor",
+      "operational emissions",
+      "upstream emissions",
+      "downstream emissions",
+      "fugitive emissions",
+      "process emissions",
+      "combustion emissions",
+      "biogenic emissions"
+    ],
+    "path_id": [
+      "0c62e37a-6c3b-45cb-9821-cf4a0db3060c",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "RESOURCE USE",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "0a2065aa-32b5-42e8-82a3-e2d98a5f21ed",
+    "label": "WASTE AND CIRCULARITY",
+    "tags": [
+      "GRI 306",
+      "SDG 3",
+      "SDG 6",
+      "SDG 12",
+      "ESRS E5"
+    ],
+    "definition": "An organization's waste generation, treatment methods, and circular economy practices, including waste reduction efforts and downstream impacts.",
+    "related_terms": [
+      "waste management",
+      "circular economy",
+      "recycling",
+      "waste reduction",
+      "landfill disposal",
+      "incineration",
+      "waste treatment",
+      "hazardous waste",
+      "non-hazardous waste",
+      "waste diversion",
+      "zero waste",
+      "waste hierarchy",
+      "material circularity",
+      "product lifecycle",
+      "end-of-life management",
+      "waste recovery",
+      "resource recovery"
+    ],
+    "path_id": [
+      "0c62e37a-6c3b-45cb-9821-cf4a0db3060c",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "RESOURCE USE",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "b3590576-59b7-41bb-888f-894748c70449",
+    "label": "ENERGY",
+    "tags": [
+      "GRI 302",
+      "SDG 7",
+      "SDG 13",
+      "ESRS E1",
+      "CDP"
+    ],
+    "definition": "Energy consumption, energy management, and shift towards renewable energy sources within an organization.",
+    "related_terms": [
+      "energy consumption",
+      "energy efficiency",
+      "renewable energy",
+      "energy intensity",
+      "energy management",
+      "electricity consumption",
+      "fuel consumption",
+      "energy reduction",
+      "clean energy",
+      "solar energy",
+      "wind energy",
+      "energy transition",
+      "power purchase agreements",
+      "renewable energy certificates",
+      "energy audits"
+    ],
+    "path_id": [
+      "0c62e37a-6c3b-45cb-9821-cf4a0db3060c",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "RESOURCE USE",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "2dc2f993-1ddb-4ac5-b42d-349aa531ec57",
+    "label": "WATER USE AND DISCHARGE",
+    "tags": [
+      "GRI 303",
+      "SDG 6",
+      "SDG 14",
+      "CDP Water",
+      "ESRS E3"
+    ],
+    "definition": "The amount of water an organization withdraws from various sources, its water recycling practices, and effluent treatment methods.",
+    "related_terms": [
+      "water consumption",
+      "water withdrawal",
+      "water discharge",
+      "water stress",
+      "water scarcity",
+      "water recycling",
+      "water reuse",
+      "effluent treatment",
+      "wastewater management",
+      "water intensity",
+      "water stewardship",
+      "freshwater usage",
+      "groundwater",
+      "surface water",
+      "water quality",
+      "water-related risks"
+    ],
+    "path_id": [
+      "0c62e37a-6c3b-45cb-9821-cf4a0db3060c",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "RESOURCE USE",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "1445f86e-ea08-47ba-af86-857109b06c42",
+    "label": "MATERIALS",
+    "tags": [
+      "GRI 301",
+      "SDG 12",
+      "ESRS E5"
+    ],
+    "definition": "Materials used by an organization, including raw materials, processed materials, recycled content, and strategies to improve resource efficiency.",
+    "related_terms": [
+      "raw materials",
+      "material consumption",
+      "recycled materials",
+      "renewable materials",
+      "material intensity",
+      "sustainable materials",
+      "material sourcing",
+      "material efficiency",
+      "resource consumption",
+      "virgin materials",
+      "secondary materials",
+      "bio-based materials",
+      "material footprint",
+      "critical materials",
+      "material circularity"
+    ],
+    "path_id": [
+      "0c62e37a-6c3b-45cb-9821-cf4a0db3060c",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "RESOURCE USE",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "1e0f2a99-0224-49d6-9b37-c687199da66d",
+    "label": "BIODIVERSITY",
+    "tags": [
+      "GRI 304",
+      "SDG 6",
+      "SDG 14",
+      "SDG 15",
+      "ESRS E4"
+    ],
+    "definition": "The impact of an organization’s activities on ecosystems and species, including protected or sensitive habitats and species extinction risks, and efforts to mitigate biodiversity loss.",
+    "related_terms": [
+      "ecosystem impacts",
+      "habitat loss",
+      "species protection",
+      "deforestation",
+      "land use change",
+      "protected areas",
+      "nature-based solutions",
+      "ecosystem services",
+      "biodiversity loss",
+      "endangered species",
+      "natural capital",
+      "ecological footprint",
+      "nature positive",
+      "habitat restoration",
+      "wildlife conservation",
+      "marine biodiversity"
+    ],
+    "path_id": [
+      "0c62e37a-6c3b-45cb-9821-cf4a0db3060c",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "RESOURCE USE",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "122d9a1a-0fdd-49de-895a-b8f87008c71d",
+    "label": "ENVIRONMENTAL COMPLIANCE",
+    "tags": [
+      "GRI 307",
+      "SDG 16",
+      "ESRS E1",
+      "SASB"
+    ],
+    "definition": "Adherence to environmental laws and regulations, with significant consequences for non-compliance, including fines and legal actions.",
+    "related_terms": [
+      "regulatory compliance",
+      "environmental violations",
+      "environmental fines",
+      "non-compliance incidents",
+      "environmental permits",
+      "regulatory breaches",
+      "environmental sanctions",
+      "legal compliance",
+      "environmental litigation",
+      "permit violations",
+      "environmental enforcement",
+      "compliance monitoring",
+      "environmental penalties",
+      "regulatory requirements",
+      "environmental prosecution"
+    ],
+    "path_id": [
+      "0c62e37a-6c3b-45cb-9821-cf4a0db3060c",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "RESOURCE USE",
+      "ORGANIZATION"
+    ]
+  },
+  {
+    "uuid": "b8962fa9-7df5-45b9-96ff-4d115d112b27",
+    "label": "SUPPLIER ENVIRONMENTAL ASSESSMENT",
+    "tags": [
+      "GRI 308",
+      "SDG 12",
+      "SDG 9",
+      "ESRS E1",
+      "CDP Supply Chain"
+    ],
+    "definition": "Assessment of a supplier’s environmental performance, including compliance, through screening, audits, and corrective actions.",
+    "related_terms": [
+      "supplier screening",
+      "supply chain assessment",
+      "vendor evaluation",
+      "supplier audits",
+      "supply chain sustainability",
+      "procurement standards",
+      "supplier code of conduct",
+      "supply chain due diligence",
+      "supplier performance",
+      "supply chain monitoring",
+      "responsible sourcing",
+      "supplier engagement",
+      "supply chain risk",
+      "third-party assessment",
+      "supplier environmental criteria"
+    ],
+    "path_id": [
+      "0c62e37a-6c3b-45cb-9821-cf4a0db3060c",
+      "5d572e35-d7ca-4bbd-bd96-8a49428e3529"
+    ],
+    "path_label": [
+      "RESOURCE USE",
+      "ORGANIZATION"
+    ]
+  }
+]
