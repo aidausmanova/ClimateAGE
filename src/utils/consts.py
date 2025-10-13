@@ -1,18 +1,18 @@
 PATH = {
     "weakly_supervised": {
         "text": "../ClimateIE/parsed_text",
-        "path": "././data/reports/processed/",
+        "path": "../data/reports/processed/",
         "RAG_preprocessed": "././outputs/preRAG",
     },
     "RAG": {
-        "vector_index": "././data/ifrs_enriched_Llama70B_NVEmbedV2",
-        "prev_retrieved": "././outputs/retrieved",
+        "vector_index": "../data/ifrs_enriched_Llama70B_NVEmbedV2",
+        "prev_retrieved": "../outputs/retrieved",
     },
     "LLM": {
-        "examples": "././outputs/few_shot.json",
-        "chunked_text": "././outputs/chunked_text_600tokens",
+        "examples": "../data/few_shot_examples.json",
+        "chunked_text": "../outputs/chunked_text_600tokens",
     },
-    "TAX": "././data/ifrs_taxonomy_enriched-Llama70B.json",
+    "TAX": "../data/ifrs_taxonomy_enriched-Llama70B.json",
 }
 
 
@@ -95,6 +95,26 @@ REPORTS = [
     "Westpac 2023 climate report",
     "Woolworths Group 2023 Sustainability Report"
 ]
+
+QUESTIONS = [
+    "Do the environmental/sustainability targets set by the company align with external climate change adaptation goals/targets?",
+    "Do the environmental/sustainability targets set by the company reference external climate change adaptation goals/targets?",
+    "Does the company identify any impacts of its business activities on the environment?",
+    "Does the company have a strategy on waste management?",
+    "Does the company report short-term actions taken or planned to reduce its waste generation?",
+    "Does the company report a plan to engage with downstream partners on water consumption or water pollution?",
+    "Does the company encourage downstream partners to carry out climate-related risk assessments?",
+    "Does the company have a specific process in place to identify risks arising from climate change?",
+    "Does the company refer to any third party scenarios when identifying climate-related risks or opportunities (e.g. IPCC trajectories, NGFS scenarios, etc.)?",
+    "Does the company report how adjustments to its business operations will allow it to adapt to climate change?",
+    "Does the company report the methodology used to identify the dependencies and impact of its business activities on the environment?",
+    "Does the company report the climate change scenarios used to test the resilience of its business strategy?",
+    "Has the company identified any synergies between its climate change adaptation goals and other business goals?",
+    "Does the company seek to adjust its business model to better provide climate change adaptation products and services?",
+    "Does the company provide definitions for climate change adaptation?"
+    ]
+
+
 
 SKIP_WORDS = [
             "the",
@@ -189,3 +209,10 @@ SKIP_CHARS = [
             "fig",
             "table",
         ]
+
+DELIMITERS = {
+    "section_delimiter": "-",
+    "tuple_delimiter": "<|>",
+    "completion_delimiter": "<|COMPLETE|>",
+    "record_delimiter": "##",
+}

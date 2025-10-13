@@ -10,12 +10,12 @@ from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import multiprocessing as mp
 
-from src.utils.basic_utlis import *
+from src.utils.basic_utils import *
 from src.utils.consts import *
 from src.embedding_model import NVEmbedV2EmbeddingModel
 
 
-class RAG:
+class Retriever:
     def __init__(self, report, init_prev_retrieved=True, use_gpu=True):
         print("Initializing retriever...")
         self.use_batching = True
@@ -189,13 +189,13 @@ def process_documents_parallel(report, docs, output_dir, num_workers=4, use_thre
 if __name__ == "__main__":
     output_dir = PATH["weakly_supervised"]["RAG_preprocessed"]
     doc_dir = PATH["weakly_supervised"]["text"]
-    report_name = REPORTS[5]
+    report_name = REPORTS[15]
 
     with open(PATH["weakly_supervised"]['path']+report_name+"/corpus.json", "r") as f:
         data = json.load(f)
     print(f"Corpus {report_name} with {len(data)} paragraphs loaded")
 
-    retriever = RAG(report=report_name, )
+    retriever = Retriever(report=report_name, )
 
     all_retrieved = {}
     for doc in tqdm(data):

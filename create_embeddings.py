@@ -12,24 +12,6 @@ from llama_index.core.embeddings import BaseEmbedding
 
 from src.embedding_model import NVEmbedV2EmbeddingModel
 
-queries = [
-    "Do the environmental/sustainability targets set by the company align with external climate change adaptation goals/targets?",
-    "Do the environmental/sustainability targets set by the company reference external climate change adaptation goals/targets?",
-    "Does the company identify any impacts of its business activities on the environment?",
-    "Does the company have a strategy on waste management?",
-    "Does the company report short-term actions taken or planned to reduce its waste generation?",
-    "Does the company report a plan to engage with downstream partners on water consumption or water pollution?",
-    "Does the company encourage downstream partners to carry out climate-related risk assessments?",
-    "Does the company have a specific process in place to identify risks arising from climate change?",
-    "Does the company refer to any third party scenarios when identifying climate-related risks or opportunities (e.g. IPCC trajectories, NGFS scenarios, etc.)?",
-    "Does the company report how adjustments to its business operations will allow it to adapt to climate change?",
-    "Does the company report the methodology used to identify the dependencies and impact of its business activities on the environment?",
-    "Does the company report the climate change scenarios used to test the resilience of its business strategy?",
-    "Has the company identified any synergies between its climate change adaptation goals and other business goals?",
-    "Does the company seek to adjust its business model to better provide climate change adaptation products and services?",
-    "Does the company provide definitions for climate change adaptation?"
-    ]
-
 
 def get_taxonomy_corpus(taxonomy_path, is_llama_doc=True, include_related_terms=False):
     with open(taxonomy_path, "r") as f:
