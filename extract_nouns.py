@@ -34,8 +34,9 @@ class Retriever:
         self.spacy_pipe = spacy.load("en_core_web_sm")
         self.TAX = load_json_file(PATH["TAX"])
         self.report_name = report
-        print("Loading previous retrieved...")
-        if init_prev_retrieved and os.path.exists(PATH["RAG"]["prev_retrieved"]+self.report_name+".json"):
+        
+        if os.path.exists(PATH["RAG"]["prev_retrieved"]+self.report_name+".json"):
+            print("Loading previous retrieved...")
             self.RETRIEVED = load_json_file(PATH["RAG"]["prev_retrieved"]+self.report_name+".json")
         else:
             self.RETRIEVED = {}
@@ -100,15 +101,15 @@ class Retriever:
         phrase_i = 0
         for phrase in pbar:
             phrase_i += 1
-            pbar.set_description(
-                f"In doc, Retrieving noun phrases - [{phrase}]: [{phrase_i}/{len(filtered_noun_phrases)}] Total Retrieved: {len(all_retrieved):,}"
-            )
+            
             if phrase in self.skip_words:
                 continue
             if phrase in self.RETRIEVED:
                 if self.RETRIEVED[phrase]:
                     row[phrase] = self.RETRIEVED[phrase]
             else:
+                pbar.set_description(
+                f"In doc, Retrieving noun phrases - [{phrase}]: [{phrase_i}/{len(filtered_noun_phrases)}] Total Retrieved: {len(self.RETRIEVED):,}")
                 # retrieve with the retriever
                 node = self.embed_model.retrieve([phrase])[0][0]
 

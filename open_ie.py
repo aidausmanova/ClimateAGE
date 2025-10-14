@@ -40,7 +40,7 @@ if __name__ == "__main__":
     parser.add_argument('--experiment', type=str, default='no_relation')
     args = parser.parse_args()
 
-    report_name = REPORTS[5] # args.report
+    report_name = args.report
     print("[INFO] Report: ", report_name)
 
     output_dir = f"outputs/openie/{args.experiment}_{args.llm}"
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     conversations = {}
     for text, idx in pbar:
         pbar.set_description(f"File [{report_name}] Paragraph [{idx}] Retrieving entities")
-        retrieved_nodes = RETRIEVER.run(text, tqdm_disable=True)
+        retrieved_nodes = RETRIEVER.run(text)
         print(len(retrieved_nodes), " # nodes retreived")
 
         pbar.set_description(f"File [{report_name}] Chunk [{idx}] Running MODEL")

@@ -1,18 +1,18 @@
 PATH = {
     "weakly_supervised": {
         "text": "../ClimateIE/parsed_text",
-        "path": "../data/reports/processed/",
+        "path": "data/reports/processed/",
         "RAG_preprocessed": "././outputs/preRAG",
     },
     "RAG": {
-        "vector_index": "../data/ifrs_enriched_Llama70B_NVEmbedV2",
-        "prev_retrieved": "../outputs/retrieved",
+        "vector_index": "data/ifrs_enriched_Llama70B_NVEmbedV2",
+        "prev_retrieved": "outputs/retrieved/",
     },
     "LLM": {
-        "examples": "../data/few_shot_examples.json",
+        "examples": "data/few_shot_examples.json",
         "chunked_text": "../outputs/chunked_text_600tokens",
     },
-    "TAX": "../data/ifrs_taxonomy_enriched-Llama70B.json",
+    "TAX": "data/ifrs_taxonomy_enriched-Llama70B.json",
 }
 
 

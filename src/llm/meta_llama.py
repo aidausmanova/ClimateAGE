@@ -236,15 +236,18 @@ class InfoExtractor:
                 pred_content = output[0].outputs[0].text
             else:
                 outputs = self.model(
-                    conversation,
+                    prompt,
                     max_new_tokens=4000,
                     pad_token_id=self.model.tokenizer.eos_token_id,
                     # eos_token_id=terminators,
-                    # do_sample=True,
-                    # temperature=0.6,
+                    do_sample=True,
+                    return_full_text=False,
+                    temperature=0.6,
+                    batch_size=8,
                     # top_p=0.9,
                 )
-                pred_content = outputs[0]["generated_text"][-1]["content"]
+                # pred_content = outputs[0]["generated_text"][-1]["content"]
+                pred_content = outputs[0]["generated_text"]
 
         conversation.append({"role": "assistant", "content": pred_content})
         response = self.parse_response(pred_content)

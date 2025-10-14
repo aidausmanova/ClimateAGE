@@ -10,5 +10,6 @@ export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
 # python create_embeddings.py
 # python enrich_taxonomy.py
+# python extract_nouns.py
 
-python extract_nouns.py
+python open_ie.py --report 'Netflix ESG Report 2022' --llm 'Llama-3.3-70B-Instruct' --experiment 'no_relation'
