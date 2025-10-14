@@ -12,7 +12,14 @@
 # A target is climate-related goal set by the organization for mitigating or adapting to climate risks, or for capturing climate opportunities.
 # An initiative is a specific activity, program, or project undertaken by an organization to achieve its climate-related objectives.
 
-# entity, framework, plan, resource, metric, financial instrument, standard, event, location, methodology, sector, time period
+
+PROMPT_REFINE_DEFINITIONS = """Given the following metadata about an entity in a climate disclosure ontology, which may include the entity’s name, ontology path,
+and a definition (which may be missing), please develop an edited definition suitable for a named entity recognition (NER)
+task in climate disclosure. The definition should be concise, clear, and limited to 150 tokens. Ensure it is precise and
+emphasizes the entity’s unique aspects, avoiding overly general descriptions that could apply to multiple entities. Do not explain;
+only provide the edited definition.
+Metadata: {metadata}
+Edited Definition:"""
 
 PROMPT_TEMPLATE_NO_RELATION = """{section_delimiter}Goal{section_delimiter}
 Given a text document with a preliminary list of potential entities, verify, and identify all entities of the specified types within the text. Note that the initial list may contain missing or incorrect entities. 

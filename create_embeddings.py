@@ -1,7 +1,7 @@
 import os
 import json
 import torch
-import uuid
+import argparse
 import numpy as np
 from typing import List, Optional
 from pathlib import Path
@@ -77,7 +77,6 @@ def save_embeddings_pytorch(embeddings, entities, save_dir):
     
     print(f"Saved to {save_dir}/embeddings.npy and metadata.json")
 
-
 class NVidiaEmbedder(BaseEmbedding):
     def __init__(self, model_name="nvidia/NV-Embed-v2", device="cuda", max_length=512, add_instructions=True, normalize_embeddings=True, **kwargs):
         super().__init__(**kwargs)
@@ -147,20 +146,17 @@ class NVidiaEmbedder(BaseEmbedding):
 
 
 if __name__ == "__main__":
-    llama_index = False
-    taxonomy_documents, taxonomy_metadata = get_taxonomy_corpus("data/ifrs_taxonomy_enriched-Llama70B.json", 
-                                             is_llama_doc=llama_index, include_related_terms=True)
-    # taxonomy_documents = []
-    # for query in queries:
-    #     taxonomy_documents.append(
-    #             Document(
-    #                 text = f"Query: {query}",
-    #             )
-    #         )
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--taxonomy', type=str, default='data/ifrs_taxonomy_enriched-Llama70B.json')
+    parser.add_argument('--is_llama_index', type=bool, default=False)
+    args = parser.parse_args()
+
+    llama_index = args.is_llama_index
+    taxonomy_path = args.taxonomy
+    taxonomy_documents, taxonomy_metadata = get_taxonomy_corpus(taxonomy_path, is_llama_doc=llama_index, include_related_terms=True)
     print("[INFO] Taxonomy loaded")
     
     if llama_index:
-
         embed_model = NVidiaEmbedder(device="cuda")
         Settings.embed_model = embed_model
 
@@ -175,5 +171,4 @@ if __name__ == "__main__":
                                               save_embeddings=True, 
                                               save_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
         
-    print("Finihsed execution")
-
+    print("[INFO] Finihsed execution")

@@ -3,8 +3,11 @@ import json
 import uuid
 import torch
 import transformers
+import argparse
 from tqdm import tqdm
 from vllm import LLM, SamplingParams
+
+from src.prompts.prompt_template_manager import PROMPT_REFINE_DEFINITIONS
 
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'   
 os.environ['VLLM_TORCH_COMPILE_LEVEL'] = '0'     
@@ -12,19 +15,17 @@ os.environ['VLLM_TORCH_COMPILE_LEVEL'] = '0'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
-PROMPT_REFINE_DEFINITIONS = """Given the following metadata about an entity in a climate disclosure ontology, which may include the entity’s name, ontology path,
-and a definition (which may be missing), please develop an edited definition suitable for a named entity recognition (NER)
-task in climate disclosure. The definition should be concise, clear, and limited to 150 tokens. Ensure it is precise and
-emphasizes the entity’s unique aspects, avoiding overly general descriptions that could apply to multiple entities. Do not explain;
-only provide the edited definition.
-Metadata: {metadata}
-Edited Definition:"""
-
 if __name__ == "__main__":
-    MODEL_NAME = "meta-llama/Llama-3.1-70B-Instruct"
-    # https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct/blob/main/generation_config.json
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--llm', type=str, default='meta-llama/Llama-3.1-70B-Instruct')
+    parser.add_argument('--taxonomy', type=str, default='data/taxonomy.json')
+    parser.add_argument('--use_vllm', type=bool, default=False)
+    args = parser.parse_args()
+    
+    MODEL_NAME = args.llm
+    USE_VLLM = args.use_vllm
+    taxonomy_path = args.taxonomy
 
-    USE_VLLM = False
     if USE_VLLM:
         sampling_params = SamplingParams(
             temperature=0.6,
@@ -40,12 +41,11 @@ if __name__ == "__main__":
             enable_prefix_caching=True,
         )
     else:
-        device = 0 if torch.cuda.is_available() else -1
+        # device = 0 if torch.cuda.is_available() else -1
         model = transformers.pipeline(
                         "text-generation",
                         model=MODEL_NAME,
                         model_kwargs={"torch_dtype": torch.bfloat16},
-                        # device=device,
                         device_map="auto",
                     )
         processor = [
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     
     print(f"[INFO] Model {MODEL_NAME} loaded")
 
-    with open("data/taxonomy.json", "r") as f:
+    with open(taxonomy_path, "r") as f:
         taxonomy_data = json.load(f)
 
     print(f"[INFO] Taxonomy loaded")
@@ -67,9 +67,8 @@ if __name__ == "__main__":
     prompts = []
     conversations = []
 
-    
     for tax_entity in taxonomy_data:
-        entity_metadata = f"Label: {tax_entity['prefLabel']}\nOntology path: {' -> '.join(tax_entity['path_label'])}\nDefinition: {tax_entity['definitions'][0]['text']}"
+        entity_metadata = f"Label: {tax_entity['prefLabel']}\nOntology path: {' > '.join(tax_entity['path_label'])}\nDefinition: {tax_entity['definitions'][0]['text']}"
         prompt = PROMPT_REFINE_DEFINITIONS.format(metadata=entity_metadata)
         prompts.append(prompt)
         conversations.append({"role": "user", "content": prompt})
@@ -114,7 +113,7 @@ if __name__ == "__main__":
         }
         entity_id += 1
 
-    with open("data/ifrs_taxonomy_enriched_1.json", "w") as f:
+    with open("data/ifrs_taxonomy_enriched.json", "w") as f:
         json.dump(enriched_tax_data, f)
 
     print("[INFO] Taxonomy enriched saved in data/taxonomy_enriched.json")

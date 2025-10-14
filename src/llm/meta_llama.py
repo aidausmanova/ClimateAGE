@@ -18,22 +18,6 @@ logger = get_logger(__name__)
 
 from transformers import PreTrainedTokenizer
 
-# def convert_text_chat_messages_to_strings(messages: List[TextChatMessage], tokenizer: PreTrainedTokenizer, add_assistant_header=True) -> List[str]:
-#     return tokenizer.apply_chat_template(conversation=messages, tokenize=False)
-
-# def convert_text_chat_messages_to_input_ids(messages: List[TextChatMessage], tokenizer: PreTrainedTokenizer, add_assistant_header=True) -> List[List[int]]:
-#     prompt = tokenizer.apply_chat_template(
-#         conversation=messages,
-#         chat_template=None,
-#         tokenize=False,
-#         add_generation_prompt=True,
-#         continue_final_message=False,
-#         tools=None,
-#         documents=None,
-#     )
-#     encoded = tokenizer(prompt, add_special_tokens=False)
-#     return encoded['input_ids']
-
 def lm_instruction(instruction):
     return "<|user|>\n" + instruction + "\n<|embed|>\n" if instruction else "<|embed|>\n"
 

@@ -9,10 +9,7 @@ from huggingface_hub import login
 from src.utils.consts import *
 from src.utils.basic_utils import *
 from extract_nouns import Retriever
-from src.embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
 from src.llm.meta_llama import InfoExtractor
-
-# login(token=os.environ.get('HF_TOKEN'))
 
 if torch.cuda.is_available():
     for i in range(torch.cuda.device_count()):
@@ -20,9 +17,9 @@ if torch.cuda.is_available():
         props = torch.cuda.get_device_properties(i)
         print(f"Name: {props.name}")
         print(f"Total Memory: {props.total_memory / 1e9:.2f} GB")
-        print(f"Allocated: {torch.cuda.memory_allocated(i) / 1e9:.2f} GB")
-        print(f"Reserved: {torch.cuda.memory_reserved(i) / 1e9:.2f} GB")
-        print(f"Free: {(props.total_memory - torch.cuda.memory_allocated(i)) / 1e9:.2f} GB")
+        # print(f"Allocated: {torch.cuda.memory_allocated(i) / 1e9:.2f} GB")
+        # print(f"Reserved: {torch.cuda.memory_reserved(i) / 1e9:.2f} GB")
+        # print(f"Free: {(props.total_memory - torch.cuda.memory_allocated(i)) / 1e9:.2f} GB")
         
     # Clear cache
     # torch.cuda.empty_cache()
