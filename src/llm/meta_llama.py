@@ -236,3 +236,42 @@ class InfoExtractor:
         conversation.append({"role": "assistant", "content": pred_content})
         response = self.parse_response(pred_content)
         return response, conversation
+
+    def run_batch(self, texts, retrieved_nodes_list):
+        """Process multiple paragraphs at once"""
+        print(f"[INFO] Processing {len(texts)} paragraphs")
+        prompts = []
+        for text, retrieved_nodes in zip(texts, retrieved_nodes_list):
+            potential_entities = ", ".join(retrieved_nodes.keys())
+            prompt = self.PROMPT_TEMPLATE.format(
+                **DELIMITERS,
+                formatted_examples=self.formatted_examples,
+                input_text=text.replace("{", "").replace("}", ""),
+                potential_entities=potential_entities,
+            ).format(**DELIMITERS)
+            prompts.append(prompt)
+        
+        if not self.use_vllm:
+            outputs = self.model(
+                prompts,
+                max_new_tokens=4000,
+                pad_token_id=self.model.tokenizer.eos_token_id,
+                do_sample=True,
+                return_full_text=False,
+                temperature=0.6,
+            )
+            
+            # conversations = [{"input": prompt, "output": out["generated_text"]} for prompt, out in zip(prompts, outputs)]
+            # responses = [self.parse_response(out["generated_text"]) for out in outputs]
+            responses = []
+            conversations = []
+            for prompt, output in zip(prompts, outputs):
+                pred_content = output["generated_text"]
+                response = self.parse_response(pred_content)
+                conversation = [
+                    {"role": "user", "content": prompt},
+                    {"role": "assistant", "content": pred_content}
+                ]
+                responses.append(response)
+                conversations.append(conversation)
+            return responses, conversations

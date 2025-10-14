@@ -10,6 +10,7 @@ export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
 # python enrich_taxonomy.py --llm 'meta-llama/Llama-3.1-70B-Instruct' --taxonomy 'data/taxonomy.json'
 # python create_embeddings.py --taxonomy 'data/ifrs_taxonomy_enriched-Llama70B.json'
-# python extract_nouns.py
+# python extract_nouns.py --report 'Test Report'
 
-python open_ie.py --report 'Netflix ESG Report 2022' --llm 'Llama-3.3-70B-Instruct' --experiment 'no_relation'
+#  Netflix ESG Report 2022
+python open_ie.py --report 'Test Report' --llm 'Llama-3.3-70B-Instruct' --experiment 'no_relation'

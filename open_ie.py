@@ -53,24 +53,42 @@ if __name__ == "__main__":
 
     with open(PATH["weakly_supervised"]['path']+report_name+"/corpus.json", "r") as f:
         data = json.load(f)
+    
 
+    ############# Run per each paragraph #############
+    # text_chunks = []
+    # for d in data:
+    #     text_chunks.append((d['title']+" "+d['text'], d['idx']))
+    # pbar = tqdm(text_chunks)
+    # outputs = {}
+    # conversations = {}
+    # for text, idx in pbar:
+    #     pbar.set_description(f"File [{report_name}] Paragraph [{idx}] Retrieving entities")
+    #     retrieved_nodes = RETRIEVER.run(text)
+    #     print(len(retrieved_nodes), " # nodes retreived")
+
+    #     pbar.set_description(f"File [{report_name}] Chunk [{idx}] Running MODEL")
+    #     output, conversation = MODEL.run(text, retrieved_nodes)
+    #     outputs[idx] = output
+    #     conversations[idx] = conversation
+    #     pbar.set_description(f"Output paragraph [{idx}]: {output}")
+
+
+
+    ############# Run per paragraph batch #############
     text_chunks = []
+    ids = []
     for d in data:
-        text_chunks.append((d['title']+" "+d['text'], d['idx']))
+        text_chunks.append(d['title']+" "+d['text'])
+        ids.append(d['idx'])
 
-    pbar = tqdm(text_chunks)
-    outputs = {}
-    conversations = {}
-    for text, idx in pbar:
-        pbar.set_description(f"File [{report_name}] Paragraph [{idx}] Retrieving entities")
-        retrieved_nodes = RETRIEVER.run(text)
-        print(len(retrieved_nodes), " # nodes retreived")
+    retrieved_nodes = []
+    for text in text_chunks:
+        retrieved_nodes.append(RETRIEVER.run(text))
 
-        pbar.set_description(f"File [{report_name}] Chunk [{idx}] Running MODEL")
-        output, conversation = MODEL.run(text, retrieved_nodes)
-        outputs[idx] = output
-        conversations[idx] = conversation
-        pbar.set_description(f"Output paragraph [{idx}]: {output}")
+    model_outputs, model_conversations = MODEL.run_batch(text_chunks, list(retrieved_nodes))
+    outputs = {idx: output for idx, output in zip(ids, model_outputs)}
+    conversations = {idx: conv for idx, conv in zip(ids, model_conversations)}
 
     with open(f"{conversations_dir}/{report_name}.json", "w") as f:
         json.dump(conversations, f)

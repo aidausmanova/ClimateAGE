@@ -4,6 +4,7 @@ import numpy as np
 import copy
 import torch
 import spacy
+import argparse
 import os
 
 from functools import lru_cache
@@ -188,9 +189,13 @@ def process_documents_parallel(report, docs, output_dir, num_workers=4, use_thre
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--report', type=str, default='')
+    args = parser.parse_args()
+
     output_dir = PATH["weakly_supervised"]["RAG_preprocessed"]
     doc_dir = PATH["weakly_supervised"]["text"]
-    report_name = REPORTS[15]
+    report_name = args.report
 
     with open(PATH["weakly_supervised"]['path']+report_name+"/corpus.json", "r") as f:
         data = json.load(f)
@@ -200,6 +205,7 @@ if __name__ == "__main__":
 
     all_retrieved = {}
     for doc in tqdm(data):
+        print(f"[INFO] Pragaraph {doc['idx']}")
         text = doc['title']+": "+doc['text']
         output = retriever.run(text)
     
