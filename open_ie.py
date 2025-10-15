@@ -38,7 +38,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     report_name = args.report
+    print("\n=== Experiment INFO ===")
+    print("[INFO] Task: Named Entity Extraction")
     print("[INFO] Report: ", report_name)
+    print("[INFO] LLM model: ", args.llm)
 
     output_dir = f"outputs/openie/{args.experiment}_{args.llm}"
     os.makedirs(output_dir, exist_ok=True)
@@ -84,14 +87,16 @@ if __name__ == "__main__":
 
     retrieved_nodes = []
     for text in text_chunks:
-        retrieved_nodes.append(RETRIEVER.run(text))
+        node = RETRIEVER.run(text)
+        if node: retrieved_nodes.append(RETRIEVER.run(text))
 
-    model_outputs, model_conversations = MODEL.run_batch(text_chunks, list(retrieved_nodes))
+    model_outputs = MODEL.generate_responses(text_chunks, retrieved_nodes, 8)
+    # model_outputs, model_conversations = MODEL.run_batch(text_chunks, list(retrieved_nodes))
     outputs = {idx: output for idx, output in zip(ids, model_outputs)}
-    conversations = {idx: conv for idx, conv in zip(ids, model_conversations)}
+    # conversations = {idx: conv for idx, conv in zip(ids, model_conversations)}
 
-    with open(f"{conversations_dir}/{report_name}.json", "w") as f:
-        json.dump(conversations, f)
+    # with open(f"{conversations_dir}/{report_name}.json", "w") as f:
+    #     json.dump(conversations, f)
     with open(f"{output_dir}/{report_name}.json", "w") as f:
         json.dump(outputs, f, indent=4)
     

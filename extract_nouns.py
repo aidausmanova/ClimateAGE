@@ -17,7 +17,7 @@ from src.embedding_model import NVEmbedV2EmbeddingModel
 
 
 class Retriever:
-    def __init__(self, report, init_prev_retrieved=True, use_gpu=True):
+    def __init__(self, report, use_gpu=True):
         print("Initializing retriever...")
         self.use_batching = True
         self.batch_size = 32
@@ -91,6 +91,11 @@ class Retriever:
                 noun_phrases2.add(p)
 
         return noun_phrases2
+
+    def retrieve_by_def(self, entity_name, entity_def):
+        text = f"Name: {entity_name}\nDefinition: {entity_def}"
+        node = self.embed_model.retrieve([text])[0][0]
+        return node['metadata']["uuid"], node['score']
 
     def run(self, text):
         noun_phrases = self.extract_noun_phrases(text)
@@ -196,6 +201,10 @@ if __name__ == "__main__":
     output_dir = PATH["weakly_supervised"]["RAG_preprocessed"]
     doc_dir = PATH["weakly_supervised"]["text"]
     report_name = args.report
+
+    print("\n=== Experiment INFO ===")
+    print("[INFO] Task: Noun Extraction")
+    print("[INFO] Report: ", report_name)
 
     with open(PATH["weakly_supervised"]['path']+report_name+"/corpus.json", "r") as f:
         data = json.load(f)

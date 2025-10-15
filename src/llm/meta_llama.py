@@ -1,9 +1,7 @@
 import os
-import numpy
 import numpy as np
 import torch
-import torch.cuda
-from typing import Tuple, List
+from tqdm import tqdm
 import transformers
 
 from vllm import LLM, SamplingParams
@@ -131,8 +129,10 @@ class InfoExtractor:
             self.model = transformers.pipeline(
                 "text-generation",
                 model=model_id,
-                model_kwargs={"torch_dtype": torch.bfloat16},
-                device_map="auto",
+                torch_dtype=torch.bfloat16,
+                # model_kwargs={"torch_dtype": torch.bfloat16},
+                # device='cuda',
+                device_map='auto',
             )
             self.processor = [
                 self.model.tokenizer.eos_token_id,
@@ -275,3 +275,41 @@ class InfoExtractor:
                 responses.append(response)
                 conversations.append(conversation)
             return responses, conversations
+
+    def process(self, example):
+        user_message = {"role": "user", "content": example}
+        messages = [user_message]
+        return self.model.tokenizer.apply_chat_template(
+            messages, tokenize=False
+        )
+
+    def generate_responses(self, texts, retrieved_nodes_list, batch_size):
+        prompts = []
+        for text, retrieved_nodes in zip(texts, retrieved_nodes_list):
+            potential_entities = ", ".join(retrieved_nodes.keys())
+            prompt = self.PROMPT_TEMPLATE.format(
+                **DELIMITERS,
+                formatted_examples=self.formatted_examples,
+                input_text=text.replace("{", "").replace("}", ""),
+                potential_entities=potential_entities,
+            ).format(**DELIMITERS)
+            prompts.append(prompt)
+        dataset = [self.process(example) for example in prompts]
+        print("[INFO] Start prargarphs processing")
+        results = []
+        for n_batch in tqdm(range(len(dataset) // batch_size + 1)):
+            batch = dataset[batch_size * n_batch : batch_size * (n_batch + 1)]
+            if len(batch) == 0:
+                continue
+            responses = self.model(
+                batch,
+                batch_size=batch_size,
+                max_new_tokens=4000,
+                do_sample=False,
+                num_beams=1,
+                return_full_text=False,
+            )
+            for response in responses:
+                results.append(self.parse_response(response[0]["generated_text"]))
+                # results.append(response[0]["generated_text"])
+        return results
