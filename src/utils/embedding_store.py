@@ -10,7 +10,9 @@ from copy import deepcopy
 import networkx as nx
 from sklearn.metrics.pairwise import cosine_similarity
 
-from src.utils.basic_utils import compute_mdhash_id
+# from src.utils.basic_utils import compute_mdhash_id
+# from ..embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
+# from src.embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +49,12 @@ class EmbeddingStore:
             )
         self._load_data()
 
-    def get_missing_string_hash_ids(self, texts: List[str]):
+    def get_missing_string_hash_ids(self, texts):
         nodes_dict = {}
 
-        for text in texts:
-            nodes_dict[compute_mdhash_id(text, prefix=self.namespace + "-")] = {'content': text}
+        for uid, text in texts:
+            # nodes_dict[compute_mdhash_id(text, prefix=self.namespace + "-")] = {'content': text}
+            nodes_dict[f"{self.namespace}-{uid}"] = {'content': text}
 
         # Get all hash_ids from the input dictionary.
         all_hash_ids = list(nodes_dict.keys())
@@ -72,7 +75,7 @@ class EmbeddingStore:
         # {hash_id: content, ...}
         for uid, text in texts:
             # nodes_dict[compute_mdhash_id(text, prefix=self.namespace + "-")] = {'content': text}
-            nodes_dict[f"{self.namespace}-{uid}"] = {'content': text}
+            nodes_dict[f"{self.namespace}_{uid}"] = {'content': text}
 
         # Get all hash_ids from the input dictionary.
         all_hash_ids = list(nodes_dict.keys())
@@ -258,3 +261,16 @@ def retrieve_knn(query_ids: List[str], key_ids: List[str], query_vecs, key_vecs,
     # end for each query batch
 
     return results
+
+
+# if __name__ == "__main__":
+    # embedding_model = NVEmbedV2EmbeddingModel(batch_size=8)
+    # taxonomy_embedding_store = EmbeddingStore(embedding_model, "outputs/graph/taxonomy_embeddings", embedding_model.batch_size, 'taxonomy')
+
+    # with open("data/ifrs_taxonomy_enriched-Llama70B.json", "r") as f:
+    #         taxonomy_data = json.load(f)
+
+    # taxonomy_texts = []
+    # for uid, concept in taxonomy_data.items():
+    #     taxonomy_texts.append((uid, f"Label: {concept['prefLabel']}\nDefinition:{concept['enriched_definition']}\nRelated terms: {concept['relatedTerms']}"))
+    # taxonomy_embedding_store.insert_strings(taxonomy_texts)

@@ -17,9 +17,11 @@ if __name__ == "__main__":
     parser.add_argument('--report', type=str, default='')
     parser.add_argument('--llm', type=str, default='Llama-3.3-70B-InstructB')
     parser.add_argument('--experiment', type=str, default='no_relation')
+    parser.add_argument('--threshold', type=int, default=50)
     args = parser.parse_args()
 
     report_name = args.report
+    threshold = args.threshold
     print("\n=== Experiment INFO ===")
     print("[INFO] Task: Entity Linking")
     print("[INFO] Report: ", report_name)
@@ -27,15 +29,6 @@ if __name__ == "__main__":
     input_dir = f"outputs/openie/{args.experiment}_{args.llm}"
     output_dir = f"outputs/postRAG/{args.experiment}_{args.llm}"
 
-    # for input_name in os.listdir(input_group):
-    #     input_dir = os.path.join(input_group, input_name)
-    #     output_dir = os.path.join("./outputs_postRAG/", f"{input_name}")
-    #     os.makedirs(output_dir, exist_ok=True)
-    #     print(f"Processing {input_name}")
-
-    # pbar = tqdm(os.listdir("./outputs_exp/base_Llama-3.1-8B-Instruct"))
-    # pbar = tqdm(os.listdir(input_dir))
-    # RAG = retriever(init_prev_retrieved=False)
     input_files = os.listdir(input_dir)
     input_files = [
         file for file in input_files if os.path.isfile(f"{output_dir}/{file}") == False
@@ -43,8 +36,7 @@ if __name__ == "__main__":
     pbar = tqdm(input_files)
     RAG = Retriever(report=report_name)
     TAX = load_json_file(PATH["TAX"])
-    threshold = 40
-
+    
     for file in pbar:
         if os.path.isfile(f"{output_dir}/{file}"):
             continue

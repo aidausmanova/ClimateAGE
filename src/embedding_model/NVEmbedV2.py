@@ -84,8 +84,13 @@ class NVEmbedV2EmbeddingModel:
         query_prefix = "Instruct: "+task_name_to_instruct["example"]+"\nQuery: "
 
         query_embeddings = self.embedding_model.encode(texts, instruction=query_prefix, max_length=self.max_length)
-        # query_embeddings = (query_embeddings.T / np.linalg.norm(query_embeddings, axis=1)).T
-        query_embeddings = F.normalize(query_embeddings, p=2, dim=1)
+        if isinstance(query_embeddings, torch.Tensor):
+            query_embeddings = F.normalize(query_embeddings, p=2, dim=1)
+            query_embeddings = query_embeddings.cpu()
+            query_embeddings = query_embeddings.numpy()
+        else:
+            query_embeddings = (query_embeddings.T / np.linalg.norm(query_embeddings, axis=1)).T
+        # query_embeddings = F.normalize(query_embeddings, p=2, dim=1)
 
         scores = (query_embeddings @ self.taxonomy_embeddings.T) * 100
 
@@ -96,7 +101,7 @@ class NVEmbedV2EmbeddingModel:
 
         all_results = []
         for query_scores in scores:
-            top_indices = np.argsort(query_scores).flip(dims=(0,))[:top_k]
+            top_indices = np.argsort(query_scores).clip(dims=(0,))[:top_k]
             top_scores = query_scores[top_indices]
 
             results = []
