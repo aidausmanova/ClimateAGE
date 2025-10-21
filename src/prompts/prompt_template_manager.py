@@ -11,7 +11,7 @@
 # A resource use is consumption of natural resources, such as energy, water, raw materials, and land.
 # A target is climate-related goal set by the organization for mitigating or adapting to climate risks, or for capturing climate opportunities.
 # An initiative is a specific activity, program, or project undertaken by an organization to achieve its climate-related objectives.
-
+# A framework is structured set of principles, guidelines, or disclosure requirements.
 
 PROMPT_REFINE_DEFINITIONS = """Given the following metadata about an entity in a climate disclosure ontology, which may include the entity’s name, ontology path,
 and a definition (which may be missing), please develop an edited definition suitable for a named entity recognition (NER)
@@ -26,14 +26,15 @@ Given a text document with a preliminary list of potential entities, verify, and
 
 {section_delimiter}Entity Types and Definitions{section_delimiter}
 An entity is legal or reporting organization, an academic or political institution or a commercial company.
-A framework is structured set of principles, guidelines, or disclosure requirements.
+A report is formal document or filing that communicates an organization’s information, performance metrics, and narrative disclosures to stakeholders.
 A plan is defined set of actions, milestones, and timelines describing how an entity will achieve its goals.
 A resource refers to an input that supports an entity’s operations.
-A standard is a specification or performance criterion used to guide or measure practices, metrics, or disclosures.
-An event is a discrete occurrence with environmental, financial, or operational implications related to climate
-An environmental impact is an effect that an entity’s activities, products, or services have on the natural environment.
+A disclosure topic is distinct subject area or theme of disclosure that captures specific issure.
+An event is a discrete occurrence with environmental, financial, or operational implications related to climate.
+An impact is an effect that an entity’s activities, products, or services have on the natural environment.
 A location is a place on Earth, a location within Earth, a vertical location, or a location outside of the Earth.
-A methodology is a defined analytical or computational approach to assess resources or impact.
+A methodology is structured approach, model, or set of procedures an organization uses to measure, calculate, estimate, or assess its risks and impacts.
+
 
 {section_delimiter}Steps{section_delimiter}
 1. Identify all entities. For each identified entity, extract the following information:

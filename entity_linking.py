@@ -56,7 +56,7 @@ if __name__ == "__main__":
             for pred in preds[paragraph_key]["entities"]:
                 uuid, score = RAG.retrieve_by_def(pred["name"], pred["description"])
                 if score > threshold:
-                    pred.update({"uuid": uuid, "score": score})
+                    pred.update({"taxonomy_uuid": uuid, "score": score})
                     post[paragraph_key].append(pred)
         RAG.save_retrieved()
 

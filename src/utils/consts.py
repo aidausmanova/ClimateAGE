@@ -7,12 +7,14 @@ PATH = {
     "RAG": {
         "vector_index": "data/ifrs_enriched_Llama70B_NVEmbedV2",
         "prev_retrieved": "outputs/retrieved/",
+        "post_retrieved": "outputs/postRAG/no_relation_Llama-3.1-8B-Instruct/"
     },
     "LLM": {
         "examples": "data/few_shot_examples.json",
         "chunked_text": "../outputs/chunked_text_600tokens",
     },
     "TAX": "data/ifrs_taxonomy_enriched-Llama70B.json",
+    "KG": "outputs/graph/"
 }
 
 

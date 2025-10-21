@@ -17,9 +17,10 @@ logger = get_logger(__name__)
 
 
 class NVEmbedV2EmbeddingModel:
-    def __init__(self, embedding_model_name: str = "nvidia/NV-Embed-v2", precomputed_embeddings_path: Optional[str] = None) -> None:
-        self.embedding_model = AutoModel.from_pretrained(embedding_model_name, trust_remote_code=True)
+    def __init__(self, embedding_model_name: str = "nvidia/NV-Embed-v2", batch_size: int = 16, precomputed_embeddings_path: Optional[str] = None) -> None:
+        self.embedding_model = AutoModel.from_pretrained(embedding_model_name, trust_remote_code=True, device_map = 'auto')
         self.max_length = 32768
+        self.batch_size = batch_size
 
         self.taxonomy_embeddings = {}
         self.taxonomy_metadata = {}
@@ -43,11 +44,26 @@ class NVEmbedV2EmbeddingModel:
                      save_embeddings: bool = False,
                      save_path: str = "data/") -> None:
         if isinstance(texts, str): texts = [texts]
-
+        
         #### Generate embeddings
-        results = self.embedding_model.encode(texts, instruction="", max_length=self.max_length)
-        # results = (results.T / np.linalg.norm(results, axis=1)).T
-        results = F.normalize(results, p=2, dim=1)
+        if len(texts) <= self.batch_size:
+            results = self.embedding_model.encode(texts, instruction="", max_length=self.max_length)
+        else:
+            pbar = tqdm(total=len(texts), desc="Batch Encoding")
+            results = []
+            for i in range(0, len(texts), self.batch_size):
+                prompts = texts[i:i + self.batch_size]
+                results.append(self.embedding_model.encode(prompts, instruction="", max_length=self.max_length))
+                pbar.update(self.batch_size)
+            pbar.close()
+            results = torch.cat(results, dim=0)
+
+        if isinstance(results, torch.Tensor):
+            results = F.normalize(results, p=2, dim=1)
+            results = results.cpu()
+            results = results.numpy()
+        else:
+            results = (results.T / np.linalg.norm(results, axis=1)).T
 
         if metadata is None:
             return results

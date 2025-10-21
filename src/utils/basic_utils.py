@@ -1,5 +1,6 @@
 import json
 import re
+from hashlib import md5
 
 
 text_template = "<heading>{}</heading>\n{}\n"
@@ -54,3 +55,15 @@ def remove_common_keys(dict1, dict2):
     return {key: dict1[key] for key in dict1 if key not in dict2}
 
 
+def compute_mdhash_id(content: str, prefix: str = "") -> str:
+    """
+    Compute the MD5 hash of the given content string and optionally prepend a prefix.
+
+    Args:
+        content (str): The input string to be hashed.
+        prefix (str, optional): A string to prepend to the resulting hash. Defaults to an empty string.
+
+    Returns:
+        str: A string consisting of the prefix followed by the hexadecimal representation of the MD5 hash.
+    """
+    return prefix + md5(content.encode()).hexdigest()
