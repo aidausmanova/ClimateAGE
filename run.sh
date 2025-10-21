@@ -10,8 +10,10 @@ export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
 # python enrich_taxonomy.py --llm 'meta-llama/Llama-3.1-70B-Instruct' --taxonomy 'data/taxonomy.json'
 # python create_embeddings.py --taxonomy 'data/ifrs_taxonomy_enriched-Llama70B.json'
-# python extract_nouns.py --report 'Test Report'
+# python extract_nouns.py --report 'AEO 2022 ESG Report'
 
-python open_ie.py --report 'Netflix ESG Report 2022' --llm 'Llama-3.1-8B-Instruct' --experiment 'no_relation'
+# python open_ie.py --report 'AEO 2022 ESG Report' --llm 'Llama-3.1-8B-Instruct' --experiment 'no_relation'
 
-# python entity_linking.py --report 'Test Report' --llm 'Llama-3.1-8B-Instruct' --experiment 'no_relation'
+# python entity_linking.py --report 'AstraZeneca Sustainability Report 2023' --llm 'Llama-3.1-8B-Instruct' --experiment 'no_relation'
+
+python create_graph.py 
