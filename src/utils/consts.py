@@ -116,8 +116,6 @@ QUESTIONS = [
     "Does the company provide definitions for climate change adaptation?"
     ]
 
-
-
 SKIP_WORDS = [
             "the",
             "this",
@@ -217,4 +215,35 @@ DELIMITERS = {
     "tuple_delimiter": "<|>",
     "completion_delimiter": "<|COMPLETE|>",
     "record_delimiter": "##",
+}
+
+
+ABBREVIATIONS = {
+    'ghg': 'greenhouse gas',
+    'co2': 'carbon dioxide',
+    'mtco2e': 'metric tons carbon dioxide equivalent',
+    'mtcoze': 'metric tons carbon dioxide equivalent',
+    'ch4': 'methane',
+    'n2o': 'nitrous oxide',
+    'esg': 'environmental social governance',
+    'ifrs': 'international financial reporting standards',
+    'tcfd': 'task force on climate related financial disclosures',
+    'sasb': 'sustainability accounting standards board',
+    'esrs': 'european sustainability reporting standard',
+    'cdp': 'carbon disclosure project',
+    'sbti': 'science based targets initiative',
+    'gri': 'global reporting initiative',
+    'cop26': '26th united nations limate change conference',
+    'un': 'united nations',
+    'eu': 'european union',
+    'ceo': 'chief executive officer',
+    'ev': 'electical vehicle',
+    'evs': 'electrical vehicle',
+    'ngo': 'non governmental organization',
+    'erm': 'environmental resources management'
+}   
+
+ORG_SUFFIXES = {
+    'inc', 'incorporated', 'corp', 'corporation', 'ltd', 'limited',
+    'llc', 'co', 'company', 'plc', 'gmbh', 'ag', 'sa', 'nv'
 }

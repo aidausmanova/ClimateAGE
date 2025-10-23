@@ -101,7 +101,8 @@ class NVEmbedV2EmbeddingModel:
 
         all_results = []
         for query_scores in scores:
-            top_indices = np.argsort(query_scores).clip(dims=(0,))[:top_k]
+            # top_indices = np.argsort(query_scores).flip(dims=(0,))[:top_k]
+            top_indices = np.argsort(query_scores)[::-1][:top_k]
             top_scores = query_scores[top_indices]
 
             results = []

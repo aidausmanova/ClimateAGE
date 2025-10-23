@@ -38,3 +38,6 @@ if __name__ == "__main__":
     # for uid, concept in taxonomy_data.items():
     #     taxonomy_texts.append((uid, f"Label: {concept['prefLabel']}\nDefinition:{concept['enriched_definition']}\nRelated terms: {concept['relatedTerms']}"))
     # taxonomy_embedding_store.insert_strings(taxonomy_texts)
+    
+    print(f"Time now: {datetime.datetime.now()}. Time elapsed: {datetime.datetime.now() - start_time}")
+    exit()
