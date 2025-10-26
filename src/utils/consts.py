@@ -1,8 +1,8 @@
+# This file stores all constant values.
+
 PATH = {
     "weakly_supervised": {
-        "text": "../ClimateIE/parsed_text",
-        "path": "data/reports/processed/",
-        "RAG_preprocessed": "././outputs/preRAG",
+        "path": "data/reports/processed/"
     },
     "RAG": {
         "vector_index": "data/ifrs_enriched_Llama70B_NVEmbedV2",
@@ -10,13 +10,11 @@ PATH = {
         "post_retrieved": "outputs/postRAG/no_relation_Llama-3.1-8B-Instruct/"
     },
     "LLM": {
-        "examples": "data/few_shot_examples.json",
-        "chunked_text": "../outputs/chunked_text_600tokens",
+        "examples": "data/few_shot_examples.json"
     },
     "TAX": "data/ifrs_taxonomy_enriched-Llama70B.json",
     "KG": "outputs/graph/"
 }
-
 
 LABELS_DICT = {
     "entities": [
@@ -64,7 +62,6 @@ LABELS_DICT = {
     },
 }
 text_template = "<heading>{}</heading>\n{}\n"
-
 
 REPORTS = [
     "2022 Microsoft Environmental Sustainability Report",
@@ -216,7 +213,6 @@ DELIMITERS = {
     "completion_delimiter": "<|COMPLETE|>",
     "record_delimiter": "##",
 }
-
 
 ABBREVIATIONS = {
     'ghg': 'greenhouse gas',

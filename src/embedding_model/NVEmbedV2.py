@@ -18,6 +18,19 @@ logger = get_logger(__name__)
 
 class NVEmbedV2EmbeddingModel:
     def __init__(self, embedding_model_name: str = "nvidia/NV-Embed-v2", batch_size: int = 16, precomputed_embeddings_path: Optional[str] = None) -> None:
+        """
+        Initializes an instance of the class and its related components.
+
+        Attributes
+            embedding_model (AutoModel): Specified transfomers AutoModel.
+            max_length (int): 
+            batch_size (int): The batch size used for processing.
+        
+        Parameters
+            embedding_model_name (str): Name of the embedding model in HuggingFace.
+            batch_size (int): The batch size used for processing.
+            precomputed_embeddings_path (str): Path to the precomputed embeddings.
+        """
         self.embedding_model = AutoModel.from_pretrained(embedding_model_name, trust_remote_code=True, device_map = 'auto')
         self.max_length = 32768
         self.batch_size = batch_size
@@ -30,6 +43,9 @@ class NVEmbedV2EmbeddingModel:
             self._load_precomputed_entities(precomputed_embeddings_path)
 
     def _load_precomputed_entities(self, path: str) -> tuple:
+        """
+        Function to load already precomputed vector embeddings.
+        """
         embeddings = np.load(path+"/vector_store.npy")
         metadata_path = path+"/metadata.json"
         with open(metadata_path, 'r') as f:
@@ -40,6 +56,7 @@ class NVEmbedV2EmbeddingModel:
         self.taxonomy_metadata = metadata
 
     def batch_encode(self, texts: List[str], 
+                     instruction: Optional[str] = "",
                      metadata: Optional[Union[List[Dict]]] = None,
                      save_embeddings: bool = False,
                      save_path: str = "data/") -> None:
@@ -47,13 +64,13 @@ class NVEmbedV2EmbeddingModel:
         
         #### Generate embeddings
         if len(texts) <= self.batch_size:
-            results = self.embedding_model.encode(texts, instruction="", max_length=self.max_length)
+            results = self.embedding_model.encode(texts, instruction=instruction, max_length=self.max_length)
         else:
             pbar = tqdm(total=len(texts), desc="Batch Encoding")
             results = []
             for i in range(0, len(texts), self.batch_size):
                 prompts = texts[i:i + self.batch_size]
-                results.append(self.embedding_model.encode(prompts, instruction="", max_length=self.max_length))
+                results.append(self.embedding_model.encode(prompts, instruction=instruction, max_length=self.max_length))
                 pbar.update(self.batch_size)
             pbar.close()
             results = torch.cat(results, dim=0)
@@ -80,6 +97,9 @@ class NVEmbedV2EmbeddingModel:
         }
 
     def retrieve(self, texts: List[str], top_k=5):
+        """
+        Function to retreive an embedding closest to the query embedding.
+        """
         task_name_to_instruct = {"example": "Given a noun term, retrieve entity that is ",}
         query_prefix = "Instruct: "+task_name_to_instruct["example"]+"\nQuery: "
 

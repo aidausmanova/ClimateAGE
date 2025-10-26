@@ -1,3 +1,5 @@
+# This file is used to create precompouted embeddings for taxonomy concepts
+
 import os
 import json
 import torch

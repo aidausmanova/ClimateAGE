@@ -1,3 +1,6 @@
+# This file is used to enrich taxonomy concept defintion with LLM 
+# for NER in climate disclosure and based on its hierarchical relationships
+
 import os
 import json
 import uuid

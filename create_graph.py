@@ -1,12 +1,16 @@
+# This file is used to run graph construction task
+
 import os
 import argparse
 from typing import List
 import json
 import datetime
 
-from src.graph.kg import KnowledgeGraphBuilder
+from src.graph.kg import ReportKnowledgeGraph
 from src.embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
 from src.utils.embedding_store import EmbeddingStore, retrieve_knn
+from src.utils.consts import *
+from src.utils.basic_utils import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -25,7 +29,21 @@ if __name__ == "__main__":
     print("[INFO] Task: Graph Construction")
     print("[INFO] Report: ", report_name)
     
-    graph = KnowledgeGraphBuilder(report_name)
+    graph = ReportKnowledgeGraph(report_name)
+    
+    print("[INFO] Starting retreival ...")
+    samples = json.load(open(f"{PATH['weakly_supervised']['path']}{report_name}/gold.json", "r"))
+    all_queries = [s['question'] for s in samples]
+
+    gold_docs = get_gold_docs(samples, report_name)
+    gold_answers = get_gold_answers(samples)
+    assert len(all_queries) == len(gold_docs) == len(gold_answers), "Length of queries, gold_docs, and gold_answers should be the same."
+
+
+    if gold_docs is not None:
+        queries, overall_retrieval_result = graph.retrieve(queries=all_queries, num_to_retrieve=10, gold_docs=gold_docs)
+    else:
+        queries = graph.retrieve(queries=all_queries, num_to_retrieve=10)
 
 
     # embedding_model = NVEmbedV2EmbeddingModel(batch_size=8)

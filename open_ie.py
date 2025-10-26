@@ -1,3 +1,5 @@
+# This file is used to extract all named entities with LLMs
+
 import os
 import torch
 import json

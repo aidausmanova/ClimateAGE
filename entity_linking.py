@@ -1,3 +1,5 @@
+# This file is used to link extracted entities with taxonomy concepts
+
 import os
 import argparse
 import datetime

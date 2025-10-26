@@ -70,21 +70,23 @@ class EmbeddingStore:
         return {h: {"hash_id": h, "content": t} for h, t in zip(missing_ids, texts_to_encode)}
 
     def insert_strings(self, texts):
+        """
+        Function to insert textual information into embedding store.
+        """
         nodes_dict = {}
 
-        # {hash_id: content, ...}
+        # {uuid: content, ...}
         for uid, text in texts:
-            # nodes_dict[compute_mdhash_id(text, prefix=self.namespace + "-")] = {'content': text}
             nodes_dict[f"{self.namespace}_{uid}"] = {'content': text}
 
-        # Get all hash_ids from the input dictionary.
+        # Get all uuids from the input dictionary.
         all_hash_ids = list(nodes_dict.keys())
         if not all_hash_ids:
             return  # Nothing to insert.
 
         existing = self.hash_id_to_row.keys()
 
-        # Filter out the missing hash_ids.
+        # Filter out the missing uuids.
         missing_ids = [hash_id for hash_id in all_hash_ids if hash_id not in existing]
 
         print(
@@ -102,7 +104,6 @@ class EmbeddingStore:
 
     def _load_data(self):
         if os.path.exists(self.filename):
-            # print("[EMBEDDINg STORE] Loading existing")
             df = pd.read_parquet(self.filename)
             self.hash_ids, self.texts, self.embeddings = df["hash_id"].values.tolist(), df["content"].values.tolist(), df["embedding"].values.tolist()
             self.hash_id_to_idx = {h: idx for idx, h in enumerate(self.hash_ids)}

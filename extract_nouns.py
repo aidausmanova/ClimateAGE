@@ -1,3 +1,6 @@
+# This file is used to extract all nouns in text and 
+# filter potential candidates based on similarity to taxonomy concepts
+
 from tqdm import tqdm
 from collections import defaultdict
 import numpy as np
@@ -18,18 +21,29 @@ from src.embedding_model import NVEmbedV2EmbeddingModel
 
 class Retriever:
     def __init__(self, report, use_gpu=True):
+        """
+        Initializes an instance of the class and its related components.
+
+        Attributes
+            use_batching (bool): Variable to set if batch processing.
+            batch_size (int): The batch size used for processing.
+            threshold (int): Similarity threshold to filter extracted nouns.
+        
+        Parameters:
+            report (str): Name of the report document to process.
+        """
         print("Initializing retriever...")
         self.use_batching = True
         self.batch_size = 32
         self.threshold = 45 #0.5
-        self.use_caching = True
+        # self.use_caching = True
 
         self.skip_words = SKIP_WORDS
         self.skip_chars = SKIP_CHARS
         self.skip_phrases = set(LABELS_DICT["label_mapper"].keys())
         self.skip_phrases.add("dataset")
 
-        device = "cuda" if use_gpu and torch.cuda.is_available() else "cpu"
+        # device = "cuda" if use_gpu and torch.cuda.is_available() else "cpu"
         self.embed_model = NVEmbedV2EmbeddingModel(precomputed_embeddings_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
 
         self.spacy_pipe = spacy.load("en_core_web_sm")

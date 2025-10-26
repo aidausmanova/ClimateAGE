@@ -1,9 +1,10 @@
 import json
 import re
 import spacy
+import unicodedata
+import numpy as np
 from hashlib import md5
 from typing import Dict, List, Set, Tuple, Optional
-import unicodedata
 from collections import defaultdict
 
 from src.utils.consts import ABBREVIATIONS, ORG_SUFFIXES
@@ -27,6 +28,57 @@ def load_json_file(file_path):
         data = json.load(file)
 
     return data
+
+def get_gold_docs(samples: List, dataset_name: str = None) -> List:
+    gold_docs = []
+    for sample in samples:
+        if 'supporting_facts' in sample:  # hotpotqa, 2wikimultihopqa
+            gold_title = set([item[0] for item in sample['supporting_facts']])
+            gold_title_and_content_list = [item for item in sample['context'] if item[0] in gold_title]
+            if dataset_name.startswith('hotpotqa'):
+                gold_doc = [item[0] + '\n' + ''.join(item[1]) for item in gold_title_and_content_list]
+            else:
+                gold_doc = [item[0] + '\n' + ' '.join(item[1]) for item in gold_title_and_content_list]
+        elif 'contexts' in sample:
+            gold_doc = [item['title'] + '\n' + item['text'] for item in sample['contexts'] if item['is_supporting']]
+        else:
+            assert 'paragraphs' in sample, "`paragraphs` should be in sample, or consider the setting not to evaluate retrieval"
+            gold_paragraphs = []
+            for item in sample['paragraphs']:
+                if 'is_supporting' in item and item['is_supporting'] is False:
+                    continue
+                gold_paragraphs.append(item)
+            gold_doc = [item['title'] + '\n' + (item['text'] if 'text' in item else item['paragraph_text']) for item in gold_paragraphs]
+
+        gold_doc = list(set(gold_doc))
+        gold_docs.append(gold_doc)
+    return gold_docs
+
+def get_gold_answers(samples):
+    gold_answers = []
+    for sample_idx in range(len(samples)):
+        gold_ans = None
+        sample = samples[sample_idx]
+
+        if 'answer' in sample or 'gold_ans' in sample:
+            gold_ans = sample['answer'] if 'answer' in sample else sample['gold_ans']
+        elif 'reference' in sample:
+            gold_ans = sample['reference']
+        elif 'obj' in sample:
+            gold_ans = set(
+                [sample['obj']] + [sample['possible_answers']] + [sample['o_wiki_title']] + [sample['o_aliases']])
+            gold_ans = list(gold_ans)
+        assert gold_ans is not None
+        if isinstance(gold_ans, str):
+            gold_ans = [gold_ans]
+        assert isinstance(gold_ans, list)
+        gold_ans = set(gold_ans)
+        if 'answer_aliases' in sample:
+            gold_ans.update(sample['answer_aliases'])
+
+        gold_answers.append(gold_ans)
+
+    return gold_answers
 
 def construct_regex(keyword):
     # split by all special character
@@ -113,3 +165,6 @@ def lemmatization(text: str) -> str:
     doc = nlp(text)
     lemmas = [token.lemma_ for token in doc]
     return ' '.join(lemmas)
+
+def min_max_normalize(x):
+    return (x - np.min(x)) / (np.max(x) - np.min(x))

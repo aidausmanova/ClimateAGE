@@ -78,13 +78,22 @@ def lm_instruction(instruction):
     
 
 class InfoExtractor:
-    def __init__(
-        self,
-        exp="base",
-        engine="Llama-3.3-70B-Instruct",
-        n_shot=10,
-        use_vllm=True,
-    ):
+    def __init__(self, exp="base", engine="Llama-3.3-70B-Instruct", n_shot=10, use_vllm=False):
+        """
+        Initializes an instance of the class and its related components.
+
+        Attributes
+            model: LLM model.
+            user_vllm (bool): Variable to set if model is loaded via VLLM. Alternatively, 
+                model is loaded via transformers pipeline.
+
+        Parameters
+            exp (str): Name of the current experiment (e.g. 0_shot, no_rag, no_relation)
+            engine (str): Name of the LLM model to be used for processing.
+            n_shot (int): Number of few-shot examples.
+            use_vllm (bool): Variable to set if model is loaded via VLLM. Alternatively, 
+                model is loaded via transformers pipeline.
+        """
         if engine == "NA":
             return
         if exp == "0_shot":
@@ -159,6 +168,9 @@ class InfoExtractor:
             self.formatted_examples += f"\nExample {i+1}:\n{example}"
 
     def parse_response(self, response, with_description=True):
+        """
+            Function to parse LLM response.
+        """
         out = {"entities": [], "relationships": []}
         # trim the response to start from the first entity
         start_index = response.find('("')
@@ -195,12 +207,10 @@ class InfoExtractor:
                     )
         return out
 
-    def run(
-        self,
-        text,
-        retrieved_nodes,
-    ):
-
+    def run(self, text, retrieved_nodes):
+        """
+            Process one paragraph at a time.
+        """
         potential_entities = list(retrieved_nodes.keys())
         potential_entities = ", ".join(potential_entities)
 
@@ -238,7 +248,9 @@ class InfoExtractor:
         return response, conversation
 
     def run_batch(self, texts, retrieved_nodes_list):
-        """Process multiple paragraphs at once"""
+        """
+            Process multiple paragraphs at once.
+        """
         print(f"[INFO] Processing {len(texts)} paragraphs")
         prompts = []
         for text, retrieved_nodes in zip(texts, retrieved_nodes_list):
@@ -284,6 +296,9 @@ class InfoExtractor:
         )
 
     def generate_responses(self, texts, retrieved_nodes_list, batch_size):
+        """
+            Function to extract named entities from the text.
+        """
         prompts = []
         for text, retrieved_nodes in zip(texts, retrieved_nodes_list):
             potential_entities = ", ".join(retrieved_nodes.keys())
