@@ -48,7 +48,8 @@ def get_gold_docs(samples: List, dataset_name: str = None) -> List:
                 if 'is_supporting' in item and item['is_supporting'] is False:
                     continue
                 gold_paragraphs.append(item)
-            gold_doc = [item['title'] + '\n' + (item['text'] if 'text' in item else item['paragraph_text']) for item in gold_paragraphs]
+            # gold_doc = [{"idx": item['idx'], 'text': item['title'] + '\n' + (item['text'] if 'text' in item else item['paragraph_text'])} for item in gold_paragraphs]
+            gold_doc = [item['idx'] for item in gold_paragraphs]
 
         gold_doc = list(set(gold_doc))
         gold_docs.append(gold_doc)

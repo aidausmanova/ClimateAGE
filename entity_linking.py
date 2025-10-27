@@ -18,6 +18,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--report', type=str, default='')
     parser.add_argument('--llm', type=str, default='Llama-3.3-70B-InstructB')
+    parser.add_argument('--corpus', type=str, default='context')
     parser.add_argument('--experiment', type=str, default='no_relation')
     parser.add_argument('--threshold', type=int, default=50)
     args = parser.parse_args()
@@ -28,8 +29,8 @@ if __name__ == "__main__":
     print("[INFO] Task: Entity Linking")
     print("[INFO] Report: ", report_name)
 
-    input_dir = f"outputs/openie/{args.experiment}_{args.llm}"
-    output_dir = f"outputs/postRAG/{args.experiment}_{args.llm}"
+    input_dir = f"outputs/openie/{args.corpus}_{args.experiment}_{args.llm}"
+    output_dir = f"outputs/postRAG/{args.corpus}_{args.experiment}_{args.llm}"
 
     input_files = os.listdir(input_dir)
     input_files = [
@@ -46,7 +47,7 @@ if __name__ == "__main__":
         post = defaultdict(list)
         nChunks = len(preds)
         for chunk_id, paragraph_key in enumerate(preds.keys()):
-            pbar.set_description(f"Processing {file} paragraph {chunk_id}/{nChunks}")
+            # pbar.set_description(f"Processing {file} paragraph {chunk_id}/{nChunks}")
             for pred in preds[paragraph_key]["entities"]:
                 uuid, score = RAG.retrieve_by_def(pred["name"], pred["description"])
                 if score > threshold:

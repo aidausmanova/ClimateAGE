@@ -22,14 +22,16 @@ print(f"Start time: {start_time}")
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ClimateAGE Graph")
     parser.add_argument('--report', type=str, default='')
+    parser.add_argument('--corpus', type=str, default='context')
     args = parser.parse_args()
     report_name = args.report
+    corpus_type = args.corpus
 
     print("\n=== Experiment INFO ===")
     print("[INFO] Task: Graph Construction")
     print("[INFO] Report: ", report_name)
     
-    graph = ReportKnowledgeGraph(report_name)
+    graph = ReportKnowledgeGraph(report_name, corpus_type)
     
     print("[INFO] Starting retreival ...")
     samples = json.load(open(f"{PATH['weakly_supervised']['path']}{report_name}/gold.json", "r"))
@@ -41,9 +43,9 @@ if __name__ == "__main__":
 
 
     if gold_docs is not None:
-        queries, overall_retrieval_result = graph.retrieve(queries=all_queries, num_to_retrieve=10, gold_docs=gold_docs)
+        queries, overall_retrieval_result = graph.retrieve(queries=all_queries, num_to_retrieve=15, gold_docs=gold_docs)
     else:
-        queries = graph.retrieve(queries=all_queries, num_to_retrieve=10)
+        queries = graph.retrieve(queries=all_queries, num_to_retrieve=15)
 
 
     # embedding_model = NVEmbedV2EmbeddingModel(batch_size=8)

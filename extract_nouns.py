@@ -112,12 +112,13 @@ class Retriever:
         return node['metadata']["uuid"], node['score']
 
     def run(self, text):
+        print("[INFO] Retrieving noun phrases")
         noun_phrases = self.extract_noun_phrases(text)
         filtered_noun_phrases = self.filter_noun_phrases(noun_phrases)
 
         row = {}
         pbar = tqdm(filtered_noun_phrases)
-        pbar.set_description("Retrieving noun phrases")
+        # pbar.set_description("Retrieving noun phrases")
         phrase_i = 0
         for phrase in pbar:
             phrase_i += 1
@@ -128,8 +129,9 @@ class Retriever:
                 if self.RETRIEVED[phrase]:
                     row[phrase] = self.RETRIEVED[phrase]
             else:
-                pbar.set_description(
-                f"In doc, Retrieving noun phrases - [{phrase}]: [{phrase_i}/{len(filtered_noun_phrases)}] Total Retrieved: {len(self.RETRIEVED):,}")
+                # pbar.set_description(
+                # f"In doc, Retrieving noun phrases - [{phrase}]: [{phrase_i}/{len(filtered_noun_phrases)}] Total Retrieved: {len(self.RETRIEVED):,}")
+                
                 # retrieve with the retriever
                 node = self.embed_model.retrieve([phrase])[0][0]
 
@@ -228,7 +230,7 @@ if __name__ == "__main__":
 
     all_retrieved = {}
     for doc in tqdm(data):
-        print(f"[INFO] Pragaraph {doc['idx']}")
+        # print(f"[INFO] Pragaraph {doc['idx']}")
         text = doc['title']+": "+doc['text']
         output = retriever.run(text)
     

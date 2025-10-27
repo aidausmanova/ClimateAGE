@@ -27,10 +27,12 @@ logger = logging.getLogger(__name__)
 class QuerySolution:
     question: str
     docs: List[str]
+    doc_ids: List[str] = None
     doc_scores: np.ndarray = None
     answer: str = None
     gold_answers: List[str] = None
     gold_docs: Optional[List[str]] = None
+    recalls: dict = None
 
 
     def to_dict(self):
@@ -38,13 +40,15 @@ class QuerySolution:
             "question": self.question,
             "answer": self.answer,
             "gold_answers": self.gold_answers,
-            "docs": self.docs[:5],
-            "doc_scores": [round(v, 4) for v in self.doc_scores.tolist()[:5]]  if self.doc_scores is not None else None,
+            "recalls": self.recalls,
+            "docs": self.docs,
+            "doc_ids": self.doc_ids,
+            "doc_scores": [round(v, 4) for v in self.doc_scores.tolist()]  if self.doc_scores is not None else None,
             "gold_docs": self.gold_docs,
         }
 
 class ReportKnowledgeGraph:
-    def __init__(self, report, llm: str = 'meta-llama/Llama-3.1-70B-Instruct', synonym_sim_threshold: float = 0.8, link_top_k: int = 5, passage_node_weight: float = 0.05, damping_factor: float = 0.5):
+    def __init__(self, report, corpus_type, llm: str = 'meta-llama/Llama-3.1-70B-Instruct', synonym_sim_threshold: float = 0.8, link_top_k: int = 5, passage_node_weight: float = 0.05, damping_factor: float = 0.5):
         """
         Initializes an instance of the class and its related components.
 
@@ -58,9 +62,10 @@ class ReportKnowledgeGraph:
             synonym_sim_threshold (float): Threshold value for KNN-based similarity scores.
         """
         self.report_name = report
+        self.corpus_type = corpus_type
         self.synonym_sim_threshold = synonym_sim_threshold
         self.embedding_model = NVEmbedV2EmbeddingModel(batch_size=8) #, precomputed_embeddings_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
-        self.working_dir = os.path.join(PATH['KG'], f"{self.report_name}")
+        self.working_dir = os.path.join(PATH['KG'], self.corpus_type, self.report_name)
         self.link_top_k = link_top_k
         self.passage_node_weight = passage_node_weight
         self.damping_factor = damping_factor
@@ -141,7 +146,9 @@ class ReportKnowledgeGraph:
         Load paragraphs into Embedding Store and as nodes to graph
         """
         print("[GRAPH] Loading paragraph chunks into embedding store ...")
-        with open(PATH['weakly_supervised']['path']+self.report_name+"/corpus.json", "r") as f:
+        if self.corpus_type == "granular": corpus_file = "corpus.json" 
+        else: corpus_file = "corpus_1.json"
+        with open(PATH['weakly_supervised']['path']+self.report_name+f"/{corpus_file}", "r") as f:
             paragraphs_data = json.load(f)
         
         paragraph_texts = []
@@ -176,7 +183,7 @@ class ReportKnowledgeGraph:
         Get list of paragraphs from where entities where extracted.
         """
         print("[GRAPH] Loading extracted entities into embedding store ...")
-        with open(PATH['RAG']['post_retrieved']+self.report_name+".json", "r") as f:
+        with open(PATH['RAG']['post_retrieved'].format(self.corpus_type)+self.report_name+".json", "r") as f:
             entities_data = json.load(f)
         entity_texts = []
         for paragraph_id, entity_list in entities_data.items():
@@ -479,6 +486,8 @@ class ReportKnowledgeGraph:
         self.get_query_embeddings(queries)
 
         retrieval_results = []
+        retrieval_results_dict = []
+
         for q_idx, query in tqdm(enumerate(queries), desc="Retrieving", total=len(queries)):
             # query_fact_scores = self.get_fact_scores(query)
             # top_k_fact_indices, top_k_facts, rerank_log = self.rerank_facts(query, query_fact_scores)
@@ -497,14 +506,18 @@ class ReportKnowledgeGraph:
             sorted_doc_ids, sorted_doc_scores = self.dense_passage_retrieval(query)
 
             top_k_docs = [self.paragraph_embedding_store.get_row(self.paragraph_node_keys[idx])["content"] for idx in sorted_doc_ids[:num_to_retrieve]]
+            tok_k_doc_ids = [self.graph.nodes[self.paragraph_node_keys[idx]]['label'] for idx in sorted_doc_ids[:num_to_retrieve]]
 
-            retrieval_results.append(QuerySolution(question=query, docs=top_k_docs, doc_scores=sorted_doc_scores[:num_to_retrieve]))
+            query_result = QuerySolution(question=query, docs=top_k_docs, doc_ids=tok_k_doc_ids, doc_scores=sorted_doc_scores[:num_to_retrieve], gold_docs=gold_docs)
+            retrieval_results.append(query_result)
+            
 
         # Evaluate retrieval
         if gold_docs is not None:
-            k_list = [1, 2, 5, 10, 15, 20]#, 30, 50, 100, 150, 200]
+            k_list = [1, 2, 5, 10, 15] # 20, 30, 50, 100, 150, 200]
             retrieved_docs=[retrieval_result.docs for retrieval_result in retrieval_results]
-            overall_retrieval_result, example_retrieval_results = calculate_recall_k(gold_docs=gold_docs, retrieved_docs=retrieved_docs, k_list=k_list)
+            retrieved_doc_ids=[retrieval_result.doc_ids for retrieval_result in retrieval_results]
+            overall_retrieval_result, example_retrieval_results = calculate_recall_k(gold_docs=gold_docs, retrieved_docs=retrieved_doc_ids, k_list=k_list)
             logger.info(f"Evaluation results for retrieval: {overall_retrieval_result}")
             print(f"Evaluation results for retrieval: {overall_retrieval_result}")
             top5_retrieved_docs = []
@@ -516,9 +529,14 @@ class ReportKnowledgeGraph:
                 print("###################################################")
                 print("QUESTION: ", queries[i])
                 print(f"RETRIEVAL RESULT: {example_retrieval_results[i]}")
+                retrieval_results[i].recalls = example_retrieval_results[i]
+                retrieval_results_dict.append(retrieval_results[i].to_dict())
                 for doc in top5_retrieved_docs[i]:
                     print(doc)
 
+
+            with open(self.working_dir+"/retrieval_results.json", "w") as f:
+                json.dump(retrieval_results_dict, f)
             return retrieval_results, overall_retrieval_result
         else:
             return retrieval_results
@@ -659,8 +677,7 @@ class ReportKnowledgeGraph:
         # Encode query
         query_embedding = self.query_to_embedding['paragraph'].get(query, None)
         if query_embedding is None:
-            query_embedding = self.embedding_model.batch_encode(query,
-                                                                instruction=get_query_instruction('query_to_passage'))
+            query_embedding = self.embedding_model.batch_encode(query, instruction=get_query_instruction('query_to_passage'))
             
         # Compute similarity scores for passages
         query_doc_scores = np.dot(self.paragraph_embeddings, query_embedding.T)
