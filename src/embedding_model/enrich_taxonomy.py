@@ -10,7 +10,7 @@ import argparse
 from tqdm import tqdm
 from vllm import LLM, SamplingParams
 
-from src.prompts.prompt_template_manager import PROMPT_REFINE_DEFINITIONS
+from ..prompts.prompt_template_manager import PROMPT_REFINE_DEFINITIONS
 
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'   
 os.environ['VLLM_TORCH_COMPILE_LEVEL'] = '0'     

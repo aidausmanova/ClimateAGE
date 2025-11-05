@@ -97,6 +97,7 @@ if __name__ == "__main__":
         node = RETRIEVER.run(text)
         if node: retrieved_nodes.append(RETRIEVER.run(text))
 
+    print("[INFO] Eaxtrating named entities ...")
     model_outputs = MODEL.generate_responses(text_chunks, retrieved_nodes, 8)
     # model_outputs, model_conversations = MODEL.run_batch(text_chunks, list(retrieved_nodes))
     outputs = {idx: output for idx, output in zip(ids, model_outputs)}

@@ -310,7 +310,7 @@ class InfoExtractor:
             ).format(**DELIMITERS)
             prompts.append(prompt)
         dataset = [self.process(example) for example in prompts]
-        print("[INFO] Start prargarphs processing")
+        
         results = []
         for n_batch in tqdm(range(len(dataset) // batch_size + 1)):
             batch = dataset[batch_size * n_batch : batch_size * (n_batch + 1)]

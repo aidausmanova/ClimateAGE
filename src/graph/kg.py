@@ -508,7 +508,7 @@ class ReportKnowledgeGraph:
             top_k_docs = [self.paragraph_embedding_store.get_row(self.paragraph_node_keys[idx])["content"] for idx in sorted_doc_ids[:num_to_retrieve]]
             tok_k_doc_ids = [self.graph.nodes[self.paragraph_node_keys[idx]]['label'] for idx in sorted_doc_ids[:num_to_retrieve]]
 
-            query_result = QuerySolution(question=query, docs=top_k_docs, doc_ids=tok_k_doc_ids, doc_scores=sorted_doc_scores[:num_to_retrieve], gold_docs=gold_docs)
+            query_result = QuerySolution(question=query, docs=top_k_docs, doc_ids=tok_k_doc_ids, doc_scores=sorted_doc_scores[:num_to_retrieve])
             retrieval_results.append(query_result)
             
 
@@ -524,15 +524,16 @@ class ReportKnowledgeGraph:
             for doc in retrieved_docs:
                 top5_retrieved_docs.append(doc[:5])
             for i in range(len(queries)):
-                logger.info(f"QUESTION: {queries[i]}")
-                logger.info(f"RETRIEVAL RESULT: {example_retrieval_results[i]}")
+                # logger.info(f"QUESTION: {queries[i]}")
+                # logger.info(f"RETRIEVAL RESULT: {example_retrieval_results[i]}")
                 print("###################################################")
                 print("QUESTION: ", queries[i])
                 print(f"RETRIEVAL RESULT: {example_retrieval_results[i]}")
                 retrieval_results[i].recalls = example_retrieval_results[i]
+                retrieval_results[i].gold_docs = gold_docs[i]
                 retrieval_results_dict.append(retrieval_results[i].to_dict())
-                for doc in top5_retrieved_docs[i]:
-                    print(doc)
+                # for doc in top5_retrieved_docs[i]:
+                #     print(doc)
 
 
             with open(self.working_dir+"/retrieval_results.json", "w") as f:

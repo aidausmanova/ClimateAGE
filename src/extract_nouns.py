@@ -112,15 +112,14 @@ class Retriever:
         return node['metadata']["uuid"], node['score']
 
     def run(self, text):
-        print("[INFO] Retrieving noun phrases")
         noun_phrases = self.extract_noun_phrases(text)
         filtered_noun_phrases = self.filter_noun_phrases(noun_phrases)
 
         row = {}
-        pbar = tqdm(filtered_noun_phrases)
+        # pbar = tqdm(filtered_noun_phrases)
         # pbar.set_description("Retrieving noun phrases")
         phrase_i = 0
-        for phrase in pbar:
+        for phrase in filtered_noun_phrases:
             phrase_i += 1
             
             if phrase in self.skip_words:
@@ -228,6 +227,7 @@ if __name__ == "__main__":
 
     retriever = Retriever(report=report_name, )
 
+    print("[INFO] Retrieving noun phrases")
     all_retrieved = {}
     for doc in tqdm(data):
         # print(f"[INFO] Pragaraph {doc['idx']}")
