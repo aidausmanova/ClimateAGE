@@ -8,10 +8,10 @@ import argparse
 from tqdm import tqdm
 from huggingface_hub import login
 
-from src.utils.consts import *
-from src.utils.basic_utils import *
+from utils.consts import *
+from utils.basic_utils import *
 from extract_nouns import Retriever
-from src.llm.meta_llama import InfoExtractor
+from llm.meta_llama import InfoExtractor
 
 if torch.cuda.is_available():
     for i in range(torch.cuda.device_count()):

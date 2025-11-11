@@ -7,8 +7,8 @@ import json
 from collections import defaultdict
 from tqdm import tqdm
 
-from src.utils.consts import *
-from src.utils.basic_utils import *
+from utils.consts import *
+from utils.basic_utils import *
 from extract_nouns import Retriever
 
 start_time = datetime.datetime.now()

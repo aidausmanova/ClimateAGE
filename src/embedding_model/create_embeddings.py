@@ -12,7 +12,7 @@ from transformers import AutoModel, AutoTokenizer
 from llama_index.core import VectorStoreIndex, Document, Settings
 from llama_index.core.embeddings import BaseEmbedding
 
-from embedding_model import NVEmbedV2EmbeddingModel
+from NVEmbedV2 import NVEmbedV2EmbeddingModel
 
 
 def get_taxonomy_corpus(taxonomy_path, is_llama_doc=True, include_related_terms=False):

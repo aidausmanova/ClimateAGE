@@ -10,7 +10,7 @@ import argparse
 from tqdm import tqdm
 from vllm import LLM, SamplingParams
 
-from ..prompts.prompt_template_manager import PROMPT_REFINE_DEFINITIONS
+from prompts.prompt_template_manager import PROMPT_REFINE_DEFINITIONS
 
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'   
 os.environ['VLLM_TORCH_COMPILE_LEVEL'] = '0'     
@@ -21,7 +21,7 @@ print(f"Using device: {device}")
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--llm', type=str, default='meta-llama/Llama-3.1-70B-Instruct')
-    parser.add_argument('--taxonomy', type=str, default='data/taxonomy.json')
+    parser.add_argument('--taxonomy', type=str)
     parser.add_argument('--use_vllm', type=bool, default=False)
     args = parser.parse_args()
     
@@ -58,11 +58,10 @@ if __name__ == "__main__":
         model.tokenizer.pad_token_id = model.tokenizer.eos_token_id
     
     print(f"[INFO] Model {MODEL_NAME} loaded")
+    print(f"[INFO] Loading taxonomy {taxonomy_path}")
 
-    with open(taxonomy_path, "r") as f:
+    with open(taxonomy_path+".json", "r") as f:
         taxonomy_data = json.load(f)
-
-    print(f"[INFO] Taxonomy loaded")
 
     enriched_tax_data = {}
     entity_id = 0
@@ -70,8 +69,8 @@ if __name__ == "__main__":
     prompts = []
     conversations = []
 
-    for tax_entity in taxonomy_data:
-        entity_metadata = f"Label: {tax_entity['prefLabel']}\nOntology path: {' > '.join(tax_entity['path_label'])}\nDefinition: {tax_entity['definitions'][0]['text']}"
+    for tax_entity in taxonomy_data.values():
+        entity_metadata = f"Label: {tax_entity['prefLabel']}\n Type: {tax_entity['ifrs_type']} with data type {tax_entity['data_type']}\nOntology path: {' > '.join(tax_entity['path_label'])}\nDefinition: {tax_entity['definition']}"
         prompt = PROMPT_REFINE_DEFINITIONS.format(metadata=entity_metadata)
         prompts.append(prompt)
         conversations.append({"role": "user", "content": prompt})
@@ -92,31 +91,36 @@ if __name__ == "__main__":
                         # top_p=0.9,
                     )
 
-    for tax_entity, output in tqdm(zip(taxonomy_data, outputs), total=len(taxonomy_data)):
+    for tax_uuid, tax_entity, output in tqdm(zip(taxonomy_data.items(), outputs), total=len(taxonomy_data)):
         if USE_VLLM:
             pred_content = output.outputs[0].text
         else:
             pred_content = output["generated_text"]
     
-        uid = str(uuid.uuid4())
-        entity_uuid_dict[tax_entity['prefLabel']] = uid
-        path_ids = [entity_uuid_dict[pl] for pl in tax_entity['path_label']]
+        # uid = str(uuid.uuid4())
+        # entity_uuid_dict[tax_entity['prefLabel']] = tax_uuid
+        # path_ids = [entity_uuid_dict[pl] for pl in tax_entity['path_label']]
         print(f"[INFO] Processing entity [{tax_entity['prefLabel']}]")
         
-        enriched_tax_data[uid] = {
+        enriched_tax_data[tax_uuid] = {
             "id": entity_id,
+            "ifrs_id": tax_entity['ifrs_is'],
             "prefLabel": tax_entity['prefLabel'],
+            "type": tax_entity['type'],
+            "substitutionGroup": tax_entity['substitutionGroup'],
+            "abstract": tax_entity['abstract'],
+            "uri": tax_entity['uri'],
             "isLeaf": tax_entity['isLeaf'],
-            "definitions": tax_entity['definitions'],
+            "ifrs_definition": tax_entity['definition'],
             "tags": tax_entity['tags'],
-            "relatedTerms": tax_entity['relatedTerms'],
+            # "relatedTerms": tax_entity['relatedTerms'],
             "path_label": tax_entity['path_label'],
-            "path_id": path_ids,
+            "path_id": tax_entity['path_id'],
             "enriched_definition": pred_content
         }
         entity_id += 1
-
-    with open("data/ifrs_taxonomy_enriched.json", "w") as f:
+    
+    with open(taxonomy_path+"_enriched.json", "w") as f:
         json.dump(enriched_tax_data, f)
 
-    print("[INFO] Taxonomy enriched saved in data/taxonomy_enriched.json")
+    print("[INFO] Enriched taxonomy saved")

@@ -13,7 +13,7 @@
 # An initiative is a specific activity, program, or project undertaken by an organization to achieve its climate-related objectives.
 # A framework is structured set of principles, guidelines, or disclosure requirements.
 
-PROMPT_REFINE_DEFINITIONS = """Given the following metadata about an entity in a climate disclosure ontology, which may include the entity’s name, ontology path,
+PROMPT_REFINE_DEFINITIONS = """Given the following metadata about an entity in a climate disclosure ontology, which may include the entity’s name, entity's data type, ontology path,
 and a definition (which may be missing), please develop an edited definition suitable for a named entity recognition (NER)
 task in climate disclosure. The definition should be concise, clear, and limited to 150 tokens. Ensure it is precise and
 emphasizes the entity’s unique aspects, avoiding overly general descriptions that could apply to multiple entities. Do not explain;

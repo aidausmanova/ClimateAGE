@@ -14,9 +14,9 @@ from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import multiprocessing as mp
 
-from src.utils.basic_utils import *
-from src.utils.consts import *
-from src.embedding_model import NVEmbedV2EmbeddingModel
+from utils.basic_utils import *
+from utils.consts import *
+from embedding_model import NVEmbedV2EmbeddingModel
 
 
 class Retriever:

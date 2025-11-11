@@ -6,11 +6,11 @@ from typing import List
 import json
 import datetime
 
-from src.graph.kg import ReportKnowledgeGraph
-from src.embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
-from src.utils.embedding_store import EmbeddingStore, retrieve_knn
-from src.utils.consts import *
-from src.utils.basic_utils import *
+from graph.kg import ReportKnowledgeGraph
+from embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
+from utils.embedding_store import EmbeddingStore, retrieve_knn
+from utils.consts import *
+from utils.basic_utils import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
