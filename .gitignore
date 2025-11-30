@@ -1,5 +1,6 @@
 .idea/*
 
+.env
 test.py
 test.ipynb
 logs/

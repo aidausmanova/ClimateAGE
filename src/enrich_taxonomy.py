@@ -8,9 +8,12 @@ import torch
 import transformers
 import argparse
 from tqdm import tqdm
-from vllm import LLM, SamplingParams
 
-from prompts.prompt_template_manager import PROMPT_REFINE_DEFINITIONS
+from dotenv import load_dotenv
+load_dotenv()
+
+
+from prompts.prompt_template_manager import PROMPT_REFINE_DEFINITIONS, REFINE_DEFINITIONS_INSTRUCTIONS
 
 os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'   
 os.environ['VLLM_TORCH_COMPILE_LEVEL'] = '0'     
@@ -22,14 +25,25 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--llm', type=str, default='meta-llama/Llama-3.1-70B-Instruct')
     parser.add_argument('--taxonomy', type=str)
-    parser.add_argument('--use_vllm', type=bool, default=False)
+    parser.add_argument('--load_type', type=str, default='openai')
     args = parser.parse_args()
-    
+
     MODEL_NAME = args.llm
-    USE_VLLM = args.use_vllm
+    LOAD_TYPE = args.load_type
     taxonomy_path = args.taxonomy
 
-    if USE_VLLM:
+    if LOAD_TYPE == "openai":
+        # --------- OpenaAI Chat AI --------
+        from openai import OpenAI
+
+        client = OpenAI(
+        api_key = os.environ['CHAT_AI_KEY'],
+        base_url = os.environ['BASE_URL']
+    )
+    elif LOAD_TYPE == 'vllm':
+        # --------- VLLM --------
+        from vllm import LLM, SamplingParams
+
         sampling_params = SamplingParams(
             temperature=0.6,
             top_p=0.9,
@@ -44,7 +58,7 @@ if __name__ == "__main__":
             enable_prefix_caching=True,
         )
     else:
-        # device = 0 if torch.cuda.is_available() else -1
+        # --------- Huggingface --------
         model = transformers.pipeline(
                         "text-generation",
                         model=MODEL_NAME,
@@ -57,7 +71,7 @@ if __name__ == "__main__":
         ]
         model.tokenizer.pad_token_id = model.tokenizer.eos_token_id
     
-    print(f"[INFO] Model {MODEL_NAME} loaded")
+    print(f"[INFO] Model {MODEL_NAME} loaded with {LOAD_TYPE}")
     print(f"[INFO] Loading taxonomy {taxonomy_path}")
 
     with open(taxonomy_path+".json", "r") as f:
@@ -70,15 +84,32 @@ if __name__ == "__main__":
     conversations = []
 
     for tax_entity in taxonomy_data.values():
-        entity_metadata = f"Label: {tax_entity['prefLabel']}\n Type: {tax_entity['ifrs_type']} with data type {tax_entity['data_type']}\nOntology path: {' > '.join(tax_entity['path_label'])}\nDefinition: {tax_entity['definition']}"
+        entity_metadata = f"Label: {tax_entity['prefLabel']}\n Type: {tax_entity['ifrs_type']} with data type {tax_entity['data_type']}\nDefinition: {tax_entity['definition']}\nOntology path: {' > '.join(tax_entity['path_label'])}"
         prompt = PROMPT_REFINE_DEFINITIONS.format(metadata=entity_metadata)
         prompts.append(prompt)
         conversations.append({"role": "user", "content": prompt})
 
     print(f"Processing {len(prompts)} entities...")
-    if USE_VLLM:
+    if LOAD_TYPE == 'openai':
+        # --------- OpenaAI Chat AI --------
+        outputs = []
+        for tax_entity in taxonomy_data.values():
+            entity_metadata = f"Label: {tax_entity['prefLabel']}\n Type: {tax_entity['ifrs_type']} with data type {tax_entity['data_type']}\nDefinition: {tax_entity['definition']}\nOntology path: {' > '.join(tax_entity['path_label'])}"
+            try:
+                output = client.chat.completions.create(
+                    messages=[{"role":"system","content":REFINE_DEFINITIONS_INSTRUCTIONS},
+                            {"role":"user","content":f"Metadata: {entity_metadata}\nEdited Definition:"}],
+                    model= "meta-llama-3.1-70b-instruct"
+                )
+                outputs.append(output.choices[0].message.content)
+            except:
+                outputs.append(None)
+                continue
+    elif LOAD_TYPE == 'vllm':
+        # --------- VLLM --------
         outputs = model.generate(prompts, sampling_params=sampling_params)
     else:
+        # --------- Huggingface --------
         outputs = model(
                         prompts,
                         max_new_tokens=4000,
@@ -91,28 +122,38 @@ if __name__ == "__main__":
                         # top_p=0.9,
                     )
 
-    for tax_uuid, tax_entity, output in tqdm(zip(taxonomy_data.items(), outputs), total=len(taxonomy_data)):
-        if USE_VLLM:
+    for tax_uuid, tax_entity, output in tqdm(zip(taxonomy_data.keys(), taxonomy_data.values(), outputs), total=len(taxonomy_data)):
+        print(f"[INFO] Processing entity [{tax_entity['prefLabel']}]")
+        print(f"[OUTPUT] {output}")
+        if LOAD_TYPE == 'openai':
+            # --------- OpenaAI Chat AI --------
+            pred_content = output
+        if LOAD_TYPE == 'vllm':
+            # --------- VLLM --------
             pred_content = output.outputs[0].text
         else:
-            pred_content = output["generated_text"]
-    
+            # --------- Huggingface --------
+            try:
+                pred_content = output["generated_text"]
+            except:
+                pred_content = output
+
         # uid = str(uuid.uuid4())
         # entity_uuid_dict[tax_entity['prefLabel']] = tax_uuid
         # path_ids = [entity_uuid_dict[pl] for pl in tax_entity['path_label']]
-        print(f"[INFO] Processing entity [{tax_entity['prefLabel']}]")
+        
         
         enriched_tax_data[tax_uuid] = {
             "id": entity_id,
-            "ifrs_id": tax_entity['ifrs_is'],
+            "ifrs_id": tax_entity['ifrs_id'],
             "prefLabel": tax_entity['prefLabel'],
             "type": tax_entity['type'],
             "substitutionGroup": tax_entity['substitutionGroup'],
-            "abstract": tax_entity['abstract'],
+            "is_abstract": tax_entity['abstract'],
             "uri": tax_entity['uri'],
-            "isLeaf": tax_entity['isLeaf'],
+            # "is_leaf": tax_entity['isLeaf'],
             "ifrs_definition": tax_entity['definition'],
-            "tags": tax_entity['tags'],
+            # "tags": tax_entity['tags'],
             # "relatedTerms": tax_entity['relatedTerms'],
             "path_label": tax_entity['path_label'],
             "path_id": tax_entity['path_id'],
@@ -120,7 +161,12 @@ if __name__ == "__main__":
         }
         entity_id += 1
     
-    with open(taxonomy_path+"_enriched.json", "w") as f:
+    model = MODEL_NAME.split("/")[1]
+    with open(taxonomy_path+f"_enriched_{model}.json", "w") as f:
         json.dump(enriched_tax_data, f)
 
     print("[INFO] Enriched taxonomy saved")
+
+
+    
+

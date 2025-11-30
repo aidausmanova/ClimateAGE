@@ -11,14 +11,14 @@ from sklearn.metrics.pairwise import cosine_similarity
 from dataclasses import dataclass
 from tqdm import tqdm
 
-
 from ..embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
 from ..prompts.prompt_template_manager import *
 from ..utils.embedding_store import EmbeddingStore, retrieve_knn
-from ..utils.reranking import DSPyFilter
 from ..utils.basic_utils import *
 from ..utils.eval_utils import *
 from ..utils.consts import *
+from ..llm.meta_llama import InfoExtractor
+from ..graph.reranking import DSPyFilter
 
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class QuerySolution:
         }
 
 class ReportKnowledgeGraph:
-    def __init__(self, report, corpus_type, llm: str = 'meta-llama/Llama-3.1-70B-Instruct', synonym_sim_threshold: float = 0.8, link_top_k: int = 5, passage_node_weight: float = 0.05, damping_factor: float = 0.5):
+    def __init__(self, report, corpus_type, experiment, taxonomy, llm: str = 'meta-llama/Llama-3.1-70B-Instruct', synonym_sim_threshold: float = 0.8, link_top_k: int = 5, passage_node_weight: float = 0.05, damping_factor: float = 0.5):
         """
         Initializes an instance of the class and its related components.
 
@@ -63,44 +63,52 @@ class ReportKnowledgeGraph:
         """
         self.report_name = report
         self.corpus_type = corpus_type
+        self.experiment = experiment
+        self.taxonomy = taxonomy
         self.synonym_sim_threshold = synonym_sim_threshold
-        self.embedding_model = NVEmbedV2EmbeddingModel(batch_size=8) #, precomputed_embeddings_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
-        self.working_dir = os.path.join(PATH['KG'], self.corpus_type, self.report_name)
         self.link_top_k = link_top_k
         self.passage_node_weight = passage_node_weight
         self.damping_factor = damping_factor
-        # self.rerank_filter = DSPyFilter(self)
+        self.llm_name = llm
 
+        self.embedding_model = NVEmbedV2EmbeddingModel(batch_size=8) #, precomputed_embeddings_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
+        self.llm_model = InfoExtractor()
+        self.rerank_filter = DSPyFilter(self)
+
+        self.working_dir = os.path.join(PATH['KG'], self.corpus_type, self.report_name)
+        
         self.entity_embeddings = {}
         self.entities = {}
+        self.triples = {}
         self.entity_uuids = {}
-        self.paragraph_uuids = {}
         self.active_paragraph_ids = []
+        self.paragraph_uuids = {}
         
         self.concept2concept_relations = 0
         self.entity2concept_relations = 0
         self.entity2paragraph_relations = 0
+        self.entity2entity_relations = 0
         self.synonym_relations = 0
 
         self.graph_triples = []
 
         self.graph = nx.DiGraph()
 
+        self.taxonomy_embedding_store = EmbeddingStore(self.embedding_model,
+                                                       os.path.join(self.working_dir, "taxonomy_embeddings"),
+                                                       self.embedding_model.batch_size, 'taxonomy')
         self.paragraph_embedding_store = EmbeddingStore(self.embedding_model,
                                                         os.path.join(self.working_dir, "paragraph_embeddings"),
                                                         self.embedding_model.batch_size, 'paragraph')
         self.entity_embedding_store = EmbeddingStore(self.embedding_model,
                                                      os.path.join(self.working_dir, "entity_embeddings"),
                                                      self.embedding_model.batch_size, 'entity')
+        # A fact is a triple with two entities and relationships between them
         self.fact_embedding_store = EmbeddingStore(self.embedding_model, 
                                                    os.path.join(self.working_dir, "fact_embeddings"),
                                                    self.embedding_model.batch_size, 'fact')
-        self.taxonomy_embedding_store = EmbeddingStore(self.embedding_model,
-                                                       os.path.join(self.working_dir, "taxonomy_embeddings"),
-                                                       self.embedding_model.batch_size, 'taxonomy')
         
         print(f"[GRAPH] Graph inititialized for report {self.report_name}")
-
         self.build_graph()
     
     ############################# GRAPH CONSTRUCTION #############################
@@ -108,32 +116,38 @@ class ReportKnowledgeGraph:
         """
         Load taxonomy concepts into Embedding Store and add as nodes to graph with hierarchical relationships
         """
-        with open("data/ifrs_taxonomy_enriched-Llama70B.json", "r") as f:
+        with open(f"data/{self.taxonomy}.json", "r") as f:
             taxonomy_data = json.load(f)
-        # taxonomy_texts = [(concept_uuid, f"Label: {concept['prefLabel']}\nDefinition:{concept['enriched_definition']}\nRelated terms: {concept['relatedTerms']}") for concept in taxonomy_data.items()]
-        # self.taxonomy_embedding_store.insert_strings(taxonomy_texts)
+        
+        taxonomy_tuples = []
+        taxonomy_metadata = {}
+        for concept_uuid, concept_data in taxonomy_data.items():
+            taxonomy_metadata[concept_uuid] = {
+                'label': concept_data['prefLabel'], 
+                'parent_concept_uuid': concept_data['path_id'][0] if len(concept_data['path_id']) > 0 else None  # First item in path_id is the immediate parent
+            }
+            taxonomy_tuples.append((concept_uuid, f"Label: {concept_data['prefLabel']}\nDefinition:{concept_data['enriched_definition']}"))
+        
+        taxonomy_node_keys = self.taxonomy_embedding_store.get_all_ids()
+        if len(taxonomy_node_keys) == 0:
+            self.taxonomy_embedding_store.insert_strings(taxonomy_data)
 
         print("[GRAPH] Loading taxonomy concepts into graph ...")
-        for concept_uuid, concept_data in taxonomy_data.items():
+        # taxonomy_node_keys: List = list(self.taxonomy_embedding_store.get_all_ids())
+        for taxonomy_id in taxonomy_node_keys:
+            concept_uuid = taxonomy_id.split("_")[1]
             self.graph.add_node(
                 f"taxonomy_{concept_uuid}",
                 node_type='concept',
                 uuid=concept_uuid,
-                label=concept_data['prefLabel'],
-                definition=concept_data['enriched_definition'],
-                tags=",".join(str(element) for element in concept_data['tags']),
-                # related_terms=",".join(str(element) for element in concept_data['relatedTerms']),
-                # path_label=",".join(str(element) for element in concept_data['path_label']),
-                # path_id=",".join(str(element) for element in concept_data['path_id'])
+                label=taxonomy_metadata[concept_uuid]['label'],
+                # definition=concept_data['enriched_definition'],
             )
 
-            path_ids = concept_data['path_id']
-            if path_ids:
-                # First item in path_id is the immediate parent
-                parent_uuid = path_ids[0]
+            if taxonomy_metadata[concept_uuid]['parent_concept_uuid']:
                 self.graph.add_edge(
-                    f"concept_{concept_uuid}",
-                    f"concept_{parent_uuid}",
+                    f"taxonomy_{concept_uuid}",
+                    f"taxonomy_{taxonomy_metadata[concept_uuid]['parent_concept_uuid']}",
                     weight = 1.0, 
                     edge_type = "hierarchical", 
                     relationship = "is subtopic of"
@@ -151,101 +165,104 @@ class ReportKnowledgeGraph:
         with open(PATH['weakly_supervised']['path']+self.report_name+f"/{corpus_file}", "r") as f:
             paragraphs_data = json.load(f)
         
-        paragraph_texts = []
+        paragraph_data = {}
+        paragraph_tuples = []
         for paragraph in paragraphs_data:
-            if paragraph['idx'] in self.active_paragraph_ids:
-                paragraph_uuid = str(uuid.uuid4())
-                self.paragraph_uuids[paragraph['idx']] = paragraph_uuid
-                paragraph_texts.append((paragraph_uuid, f"{paragraph['title']}\n{paragraph['text']}"))
-        # paragraph_texts = [f"{chunk['title']}\n{chunk['text']}" for chunk in paragraphs_data]
-        self.paragraph_embedding_store.insert_strings(paragraph_texts)
+            # if paragraph['idx'] in self.active_paragraph_ids:
+            paragraph_data[paragraph['uid']] = {
+                'idx': paragraph['idx'], 
+                'title': paragraph['title']
+            }
+            self.paragraph_uuids[paragraph['idx']] = paragraph['uid']
+            paragraph_tuples.append((paragraph['uid'], f"{paragraph['title']}\n{paragraph['text']}"))
+
+        paragraph_node_keys = self.paragraph_embedding_store.get_all_ids()
+        if len(paragraph_node_keys) == 0:
+            self.paragraph_embedding_store.insert_strings(paragraph_tuples)
 
         ############ Need to change that to retrieve from embeddings store ############
+        # paragraph_node_keys: List = list(self.paragraph_embedding_store.get_all_ids())
         print("[GRAPH] Loading paragraph chunks into graph ...")
-        for paragraph in paragraphs_data:
-            if paragraph['idx'] in self.active_paragraph_ids:
-                uid = self.paragraph_uuids[paragraph['idx']]
-                paragraph_id = f"paragraph_{uid}"
-                self.graph.add_node(
-                        paragraph_id,
-                        node_type='paragraph',
-                        uuid=uid,
-                        label=paragraph['idx'],
-                        title=paragraph['title'],
-                        text=paragraph['text']
-                    )
-
+        for paragraph_id in paragraph_node_keys:
+            # if paragraph['idx'] in self.active_paragraph_ids:
+            uid = paragraph_id.split("_")[1]
+            self.graph.add_node(
+                    paragraph_id,
+                    node_type='paragraph',
+                    uuid=uid,
+                    label=paragraph_data[uid]['idx'],
+                    title=paragraph_data[uid]['title'],
+                    # text=paragraph['text']
+                )
         print(f"[GRAPH] Loaded {len(self.paragraph_uuids)} paragraph nodes into graph")
 
-    def preprocess_entities(self):
+    def preprocess_extracted_data(self):
         """
-        Disambiguate extracted entity names and load into Embedding Store.
-        Get list of paragraphs from where entities where extracted.
+        Function to get extracted entities and their relationships.
         """
-        print("[GRAPH] Loading extracted entities into embedding store ...")
-        with open(PATH['RAG']['post_retrieved'].format(self.corpus_type)+self.report_name+".json", "r") as f:
-            entities_data = json.load(f)
-        entity_texts = []
-        for paragraph_id, entity_list in entities_data.items():
-            self.active_paragraph_ids.append(paragraph_id)
-            for entity_data in entity_list:
-                curr_entity_name = entity_data['name']
-                # Entity disambiguation
-                normalized = basic_normalize(curr_entity_name)
-                normalized = expand_abbreviations(normalized)
-                if entity_data['label'] == 'organization': normalized = normalize_organization_name(curr_entity_name)
-                normalized_entity_name = lemmatization(normalized)
+        with open(PATH['RAG']['post_retrieved'].format(self.corpus_type, self.experiment)+self.report_name+".json", "r") as f:
+            postrag_data = json.load(f)
+        
+        entity_tuples = []
+        self.entity_uuids = postrag_data['entity_id_mapping']
+        # Load entities
+        for entity_data in postrag_data['entities']:
+            # self.active_paragraph_ids.extend(entity_data['mentioned_in_paragraphs'])
+            # if entity_data['name'] not in self.entity_uuids:
+            entity = {
+                    "label": entity_data['canonical_name'],
+                    "entity_type": entity_data['label'],
+                    "definition": entity_data['definition'],
+                    "paragraph_ids": entity_data['mentioned_in_paragraphs'],
+                    "taxonomy_concepts": [(entity_data['taxonomy_uuid'], entity_data['score'])] if 'taxonomy_uuid' in entity_data else []
+                }
+            self.entities[entity_data['id']] = entity
+            entity_tuples.append((entity_data['id'], f"{entity_data['canonical_name']}\n{entity_data['definition']}"))
 
-                if normalized_entity_name not in self.entity_uuids:
-                    entity_uuid = str(uuid.uuid4())
-                    entity = {
-                            "label": normalized_entity_name,
-                            "entity_type": entity_data['label'],
-                            "definition": entity_data['description'],
-                            "paragraph_ids": [paragraph_id],
-                            "taxonomy_concepts": [(entity_data['taxonomy_uuid'], entity_data['score'])]
-                        }
-                    self.entities[entity_uuid] = entity
-                    self.entity_uuids[normalized_entity_name] = entity_uuid
-                    entity_texts.append((entity_uuid, f"{normalized_entity_name}\n{entity_data['description']}"))
-                else:
-                    curr_entity_uuid = self.entity_uuids[normalized_entity_name]
-                    self.entities[curr_entity_uuid]['paragraph_ids'].append(paragraph_id)
+            # else:
+            #     curr_entity_uuid = self.entity_uuids[entity['name']]
+            #     self.entities[curr_entity_uuid]['paragraph_ids'].append(paragraph_id)
 
-                    if entity_data['taxonomy_uuid'] not in self.entities[curr_entity_uuid]['taxonomy_concepts']:
-                        self.entities[curr_entity_uuid]['taxonomy_concepts'].append((entity_data['taxonomy_uuid'], entity_data['score']))
-               
-        # entity_texts = [f"{entity['name']}\n{entity['description']}" for entity in entities_data.values()]
-        self.entity_embedding_store.insert_strings(entity_texts)
+            # if entity['taxonomy_uuid'] not in self.entities[entity['id']]['taxonomy_concepts']:
+            #     self.entities[curr_entity_uuid]['taxonomy_concepts'].append((entity['taxonomy_uuid'], entity['score']))
+            
+        # Load relationship data
+        for relation in postrag_data['relationships']:
+            self.triples[f"{relation['source_id']}_{relation['target_id']}"] = relation
+
+        if len(self.entity_embedding_store.get_all_ids()) == 0:
+            self.entity_embedding_store.insert_strings(entity_tuples)
 
     def load_entities(self):
         """
         Load entities into graph and add relationships with paragraphs that mention entity and taxonomy concept closest to the entity.
         """
         print("[GRAPH] Loading extracted entities into graph ...")
-        for entity_uuid, entity_data in self.entities.items():
+        entity_node_keys: List = list(self.entity_embedding_store.get_all_ids())
+        for entity_id in entity_node_keys:
+            entity_uuid = entity_id.split("_")[1]
             self.graph.add_node(
-                f"entity_{entity_uuid}",
+                entity_id,
                 node_type='entity',
                 uuid=entity_uuid,
-                label=entity_data['label'],
-                entity_type=entity_data['entity_type'],
-                definition=entity_data['definition'],
-                paragraphs=",".join(str(element) for element in entity_data['paragraph_ids']),
-                concepts=",".join(str(element[0]) for element in entity_data['taxonomy_concepts']),
+                label=self.entities[entity_uuid]['label'],
+                entity_type=self.entities[entity_uuid]['entity_type'],
+                definition=self.entities[entity_uuid]['definition'],
+                paragraphs=",".join(str(element) for element in self.entities[entity_uuid]['paragraph_ids']),
+                concepts=",".join(str(element[0]) for element in self.entities[entity_uuid]['taxonomy_concepts']),
             )
                     
             # Add edge between entity and pargaraph
-            for paragraph_idx in entity_data['paragraph_ids']:
+            for paragraph_idx in self.entities[entity_uuid]['paragraph_ids']:
                 self.add_node_to_paragraph_edge(entity_uuid, self.paragraph_uuids[paragraph_idx])
                 self.entity2paragraph_relations += 1
             
-            for taxonomy_uuid, taxonomy_sim_score in entity_data['taxonomy_concepts']:
-                # Add edge between entity and taxonomy concept
+            # Add edge between entity and taxonomy concept
+            for taxonomy_uuid, taxonomy_sim_score in self.entities[entity_uuid]['taxonomy_concepts']:
                 self.add_node_to_concept_edge(entity_uuid, taxonomy_uuid, taxonomy_sim_score/100)
                 self.entity2concept_relations += 1
             
-        print(f"[GRAPH] Loaded {len(self.entities)} entity nodes into graph")
+        print(f"[GRAPH] Loaded {len(entity_node_keys)} entity nodes into graph")
 
     def connect_synonyms(self):
         """
@@ -322,21 +339,19 @@ class ReportKnowledgeGraph:
             print("[GRAPH] Graph file exists")
             self.load_graph(graph_file)
         else:
-            print("[GRAPH] Start loading embedding store and graph nodes ...")
             # Load data into embedding stor and create nodes
             self.load_taxonomy_concepts()
-            self.preprocess_entities()
+            self.preprocess_extracted_data()
             self.load_paragraphs()
             self.load_entities()
 
-            print("[GRAPH] All nodes loaded. Start synonymity detection ...")
-            
-            # Compute embeddings and detect synonyms
-            self.connect_synonyms()
+            triple_tuples = [(triple_id, f"('{triple['source_name']}', '{triple['relation']}', '{triple['target_name']}')") for triple_id, triple in self.triples.items()]
+            if len(self.fact_embedding_store.get_all_ids()) == 0:
+                self.fact_embedding_store.insert_strings(triple_tuples)
+            self.add_fact_edges()
 
-            # Extract triple information from graph and add to embedding store
-            self.extract_all_triples()
-            self.fact_embedding_store.insert_strings(self.graph_triples)
+            print("[GRAPH] All nodes loaded. Start synonymity detection ...")
+            self.connect_synonyms()
 
             self.save_graph(self.working_dir)
             print("[GRAPH] Graph construction completed!")
@@ -379,18 +394,19 @@ class ReportKnowledgeGraph:
         graph_GRAPH["num_entity_nodes"] = len(entity_nodes_keys)
         paragraph_nodes_keys = self.paragraph_embedding_store.get_all_ids()
         graph_GRAPH["num_paragraph_nodes"] = len(paragraph_nodes_keys)
-        # concept_nodes_keys = self.taxonomy_embedding_store.get_all_ids()
-        graph_GRAPH["num_concept_nodes"] = 33 #len(set(concept_nodes_keys))
+        concept_nodes_keys = self.taxonomy_embedding_store.get_all_ids()
+        graph_GRAPH["num_concept_nodes"] = len(set(concept_nodes_keys))
         graph_GRAPH["num_total_nodes"] = graph_GRAPH["num_entity_nodes"] + graph_GRAPH["num_paragraph_nodes"] + graph_GRAPH["num_concept_nodes"]
 
         graph_GRAPH['nun_hierarchical_edges'] = self.concept2concept_relations
         graph_GRAPH['nun_paragraph_mention_edges'] = self.entity2paragraph_relations
         graph_GRAPH['num_entity_link_edges'] = self.entity2concept_relations
+        graph_GRAPH['num_fact_edges'] = self.entity2entity_relations
         graph_GRAPH['num_synonym_edges'] = self.synonym_relations
-        graph_GRAPH['num_total_edges'] = self.concept2concept_relations + self.entity2paragraph_relations + self.entity2concept_relations + self.synonym_relations
+        graph_GRAPH['num_total_edges'] = self.concept2concept_relations + self.entity2paragraph_relations + self.entity2concept_relations + self.entity2entity_relations + self.synonym_relations
         return graph_GRAPH
 
-    def add_node_to_paragraph_edge(self, entity_uuid, paragraph_uuid, relation="is extracated from"):
+    def add_node_to_paragraph_edge(self, entity_uuid, paragraph_uuid, relation="is mentioned in"):
         """
         Function to add edge between entity and its paragraph.
         """
@@ -408,12 +424,27 @@ class ReportKnowledgeGraph:
         """
         self.graph.add_edge(
                     f"entity_{entity_uuid}",
-                    f"concept_{concept_uuid}",
+                    f"taxonomy_{concept_uuid}",
                     weight = score, 
                     edge_type = "link", 
                     relationship = relation
                 )
-        
+    
+    def add_fact_edges(self):
+        """
+        Function to add edge between two entities.
+        """
+        logger.info("[GRAPH] Adding fact edges ...")
+        for triple_id, triple_metadata in self.triples.items():
+            self.graph.add_edge(
+                f"entity_{triple_metadata['source_id']}",
+                f"entity_{triple_metadata['target_id']}",
+                weight = 1.0, # Change to mention frequency?
+                edge_type = "fact", 
+                relationship = triple_metadata['relation']
+            )
+            self.entity2entity_relations += 1
+
     def extract_all_triples(self):
         """
         Extract all triples from the graph
@@ -481,29 +512,28 @@ class ReportKnowledgeGraph:
         -----
         - Long queries with no relevant facts after reranking will default to results from dense passage retrieval.
         """
+        
         self.prepare_retrieval_objects()
-
         self.get_query_embeddings(queries)
 
         retrieval_results = []
         retrieval_results_dict = []
 
         for q_idx, query in tqdm(enumerate(queries), desc="Retrieving", total=len(queries)):
-            # query_fact_scores = self.get_fact_scores(query)
-            # top_k_fact_indices, top_k_facts, rerank_log = self.rerank_facts(query, query_fact_scores)
-
-            # if len(top_k_facts) == 0:
-            #     logger.info('No facts found after reranking, return DPR results')
-            #     sorted_doc_ids, sorted_doc_scores = self.dense_passage_retrieval(query)
-            # else:
-            #     sorted_doc_ids, sorted_doc_scores = self.graph_search_with_fact_entities(query=query,
-            #                                                                              link_top_k=self.link_top_k,
-            #                                                                              query_fact_scores=query_fact_scores,
-            #                                                                              top_k_facts=top_k_facts,
-            #                                                                              top_k_fact_indices=top_k_fact_indices,
-            #                                                                              passage_node_weight=self.passage_node_weight)
-                
-            sorted_doc_ids, sorted_doc_scores = self.dense_passage_retrieval(query)
+            query_fact_scores = self.get_fact_scores(query)
+            top_k_fact_indices, top_k_facts, rerank_log = self.rerank_facts(query, query_fact_scores)
+            print("[RERANK LOG]", rerank_log)
+            if len(top_k_facts) == 0:
+                logger.info('No facts found after reranking, return DPR results')
+                print("No facts found after reraning")
+                sorted_doc_ids, sorted_doc_scores = self.dense_passage_retrieval(query)
+            else:
+                sorted_doc_ids, sorted_doc_scores = self.graph_search_with_fact_entities(query=query,
+                                                                                         link_top_k=self.link_top_k,
+                                                                                         query_fact_scores=query_fact_scores,
+                                                                                         top_k_facts=top_k_facts,
+                                                                                         top_k_fact_indices=top_k_fact_indices,
+                                                                                         passage_node_weight=self.passage_node_weight)
 
             top_k_docs = [self.paragraph_embedding_store.get_row(self.paragraph_node_keys[idx])["content"] for idx in sorted_doc_ids[:num_to_retrieve]]
             tok_k_doc_ids = [self.graph.nodes[self.paragraph_node_keys[idx]]['label'] for idx in sorted_doc_ids[:num_to_retrieve]]
@@ -554,7 +584,7 @@ class ReportKnowledgeGraph:
         self.entity_node_keys: List = list(self.entity_embedding_store.get_all_ids()) # a list of phrase node keys
         self.paragraph_node_keys: List = list(self.paragraph_embedding_store.get_all_ids()) # a list of passage node keys
         self.concept_node_keys: List = list(self.taxonomy_embedding_store.get_all_ids()) # a list of taxonomy node keys
-        self.fact_node_keys: List = list(self.fact_embedding_store.get_all_ids())
+        self.fact_node_keys: List = list(self.fact_embedding_store.get_all_ids()) # a list of fact node keys
 
         # assert len(self.entity_node_keys) + len(self.paragraph_node_keys) + len(self.concept_node_keys) == self.graph.vcount()
 
@@ -587,7 +617,6 @@ class ReportKnowledgeGraph:
             queries List[str] | List[QuerySolution]: A list of query strings or QuerySolution objects. Each query is checked for
             its presence in the query-to-embedding mappings.
         """
-
         all_query_strings = []
         for query in queries:
             if isinstance(query, QuerySolution) and (
@@ -631,10 +660,10 @@ class ReportKnowledgeGraph:
             If no embedding is found for the provided query in the stored query
             embeddings dictionary.
         """
+        logger.info("[GRAPH] Extracting fact scores")
         query_embedding = self.query_to_embedding['triple'].get(query, None)
         if query_embedding is None:
-            query_embedding = self.embedding_model.batch_encode(query,
-                                                                instruction=get_query_instruction('query_to_fact'))
+            query_embedding = self.embedding_model.batch_encode(query, instruction=get_query_instruction('query_to_fact'))
 
         # Check if there are any facts
         if len(self.fact_embeddings) == 0:
@@ -674,7 +703,7 @@ class ReportKnowledgeGraph:
             - A numpy array of the normalized similarity scores for the corresponding
               documents.
         """
-        logger.info("[INFO] Calculating DPR scores ...")
+        print("[INFO] Calculating DPR scores ...")
         # Encode query
         query_embedding = self.query_to_embedding['paragraph'].get(query, None)
         if query_embedding is None:
@@ -760,6 +789,7 @@ class ReportKnowledgeGraph:
                 - The first array corresponds to document IDs sorted based on their scores.
                 - The second array consists of the PPR scores associated with the sorted document IDs.
         """
+        print("[GRAPH] Performing graph search with facts")
         #Assigning phrase weights based on selected facts from previous steps.
         linking_score_map = {}  # from phrase to the average scores of the facts that contain the phrase
         phrase_scores = {}  # store all fact scores for each phrase regardless of whether they exist in the knowledge graph or not
@@ -827,36 +857,36 @@ class ReportKnowledgeGraph:
 
         return ppr_sorted_doc_ids, ppr_sorted_doc_scores
 
-    # def rerank_facts(self, query: str, query_fact_scores: np.ndarray) -> Tuple[List[int], List[Tuple], dict]:
-    #     """
+    def rerank_facts(self, query: str, query_fact_scores: np.ndarray) -> Tuple[List[int], List[Tuple], dict]:
+        """
 
-    #     Returns:
-    #         top_k_fact_indicies:
-    #         top_k_facts:
-    #         rerank_log (dict): {'facts_before_rerank': candidate_facts, 'facts_after_rerank': top_k_facts}
-    #             - candidate_facts (list): list of link_top_k facts (each fact is a relation triple in tuple data type).
-    #             - top_k_facts:
+        Returns:
+            top_k_fact_indicies:
+            top_k_facts:
+            rerank_log (dict): {'facts_before_rerank': candidate_facts, 'facts_after_rerank': top_k_facts}
+                - candidate_facts (list): list of link_top_k facts (each fact is a relation triple in tuple data type).
+                - top_k_facts:
 
 
-    #     """
-    #     # load args
-    #     link_top_k: int = self.link_top_k
+        """
+        print("[GRAPH] Reranking facts")
+        # load args
+        link_top_k: int = self.link_top_k
 
-    #     candidate_fact_indices = np.argsort(query_fact_scores)[-link_top_k:][
-    #                              ::-1].tolist()  # list of ranked link_top_k fact relative indices
-    #     real_candidate_fact_ids = [self.fact_node_keys[idx] for idx in
-    #                                candidate_fact_indices]  # list of ranked link_top_k fact keys
-    #     fact_row_dict = self.fact_embedding_store.get_rows(real_candidate_fact_ids)
-    #     candidate_facts = [eval(fact_row_dict[id]['content']) for id in real_candidate_fact_ids]  # list of link_top_k facts (each fact is a relation triple in tuple data type)
+        candidate_fact_indices = np.argsort(query_fact_scores)[-link_top_k:][::-1].tolist()  # list of ranked link_top_k fact relative indices
+        real_candidate_fact_ids = [self.fact_node_keys[idx] for idx in
+                                   candidate_fact_indices]  # list of ranked link_top_k fact keys
+        fact_row_dict = self.fact_embedding_store.get_rows(real_candidate_fact_ids)
+        candidate_facts = [eval(fact_row_dict[id]['content']) for id in real_candidate_fact_ids]  # list of link_top_k facts (each fact is a relation triple in tuple data type)
 
-    #     top_k_fact_indices, top_k_facts, reranker_dict = self.rerank_filter(query,
-    #                                                                          candidate_facts,
-    #                                                                          candidate_fact_indices,
-    #                                                                          len_after_rerank=link_top_k)
+        top_k_fact_indices, top_k_facts, reranker_dict = self.rerank_filter(query,
+                                                                             candidate_facts,
+                                                                             candidate_fact_indices,
+                                                                             len_after_rerank=link_top_k)
 
-    #     rerank_log = {'facts_before_rerank': candidate_facts, 'facts_after_rerank': top_k_facts}
+        rerank_log = {'facts_before_rerank': candidate_facts, 'facts_after_rerank': top_k_facts}
 
-    #     return top_k_fact_indices, top_k_facts, rerank_log
+        return top_k_fact_indices, top_k_facts, rerank_log
     
     def run_ppr(self,
                 reset_prob: np.ndarray,
@@ -882,7 +912,7 @@ class ReportKnowledgeGraph:
                 contains the corresponding relevance scores of each document passage
                 in the same order.
         """
-        logger.info("[INFO] Running PPR algorithm")
+        print("[GRAPH] Running PPR algorithm")
         if damping is None: damping = 0.5 # for potential compatibility
         reset_prob = np.where(np.isnan(reset_prob) | (reset_prob < 0), 0, reset_prob)
         pagerank_scores = self.graph.personalized_pagerank(

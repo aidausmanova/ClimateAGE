@@ -3,21 +3,52 @@ import numpy as np
 import torch
 from tqdm import tqdm
 import transformers
-
-from vllm import LLM, SamplingParams
-
+from vllm import SamplingParams, LLM
+from string import Template
+from typing import (
+    Optional,
+    Union,
+    List,
+    TypedDict
+)
 
 from ..prompts.prompt_template_manager import *
 from ..utils.basic_utils import *
 from ..utils.consts import *
 from ..utils.logging_utils import get_logger
 
+from dotenv import load_dotenv
+load_dotenv()
+
 logger = get_logger(__name__)
 
 from transformers import PreTrainedTokenizer
 
+class TextChatMessage(TypedDict):
+    """Representation of a single text-based chat message in the chat history."""
+    role: str  # Either "system", "user", or "assistant"
+    content: Union[str, Template]  # The text content of the message (could also be a string.Template instance)
+
+
 def lm_instruction(instruction):
     return "<|user|>\n" + instruction + "\n<|embed|>\n" if instruction else "<|embed|>\n"
+
+def convert_text_chat_messages_to_strings(messages: List[TextChatMessage], tokenizer: PreTrainedTokenizer, add_assistant_header=True) -> List[str]:
+    return tokenizer.apply_chat_template(conversation=messages, tokenize=False)
+
+def convert_text_chat_messages_to_input_ids(messages: List[TextChatMessage], tokenizer: PreTrainedTokenizer, add_assistant_header=True) -> List[List[int]]:
+    prompt = tokenizer.apply_chat_template(
+        conversation=messages,
+        chat_template=None,
+        tokenize=False,
+        add_generation_prompt=True,
+        continue_final_message=False,
+        tools=None,
+        documents=None,
+    )
+    encoded = tokenizer(prompt, add_special_tokens=False)
+    return encoded['input_ids']
+
 
 
 # class VLLMLlama:
@@ -78,7 +109,7 @@ def lm_instruction(instruction):
     
 
 class InfoExtractor:
-    def __init__(self, exp="base", engine="Llama-3.3-70B-Instruct", n_shot=10, use_vllm=False):
+    def __init__(self, exp="base", engine="Llama-3.3-70B-Instruct", n_shot=10, load_type='openai'):
         """
         Initializes an instance of the class and its related components.
 
@@ -97,11 +128,9 @@ class InfoExtractor:
         if engine == "NA":
             return
         if exp == "0_shot":
-            self.PROMPT_TEMPLATE = PROMPT_TEMPLATE_ZERO_SHOT
+            self.PROMPT_TEMPLATE = PROMPT_TEMPLATE
         elif exp == "no_rag":
-            self.PROMPT_TEMPLATE = PROMPT_TEMPLATE_NO_RAG
-        elif exp == "no_relation":
-            self.PROMPT_TEMPLATE = PROMPT_TEMPLATE_NO_RELATION
+            self.PROMPT_TEMPLATE = PROMPT_TEMPLATE
         else:
             print(f"Using base prompt template for exp = {exp}")
             self.PROMPT_TEMPLATE = PROMPT_TEMPLATE
@@ -109,14 +138,14 @@ class InfoExtractor:
             n_shot = int(exp.split("_")[0])
 
         self.model = None
-        self.use_vllm = use_vllm
+        self.load_type = load_type
 
         # Load LLM model
         model_id = "meta-llama/" + engine
         print(f"Loading model from {model_id}")
 
-        if self.use_vllm:
-            from vllm import LLM, SamplingParams
+        if self.load_type == 'vllm':
+            # --------- VLLM --------
 
             # https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct/blob/main/generation_config.json
             self.sampling_params = SamplingParams(
@@ -132,6 +161,13 @@ class InfoExtractor:
                 gpu_memory_utilization=0.8,
                 max_model_len=20000, # 4096,  # 25390,
                 enable_prefix_caching=True,
+            )
+        elif self.load_type == 'openai':
+            # --------- OpenaAI Chat AI --------
+            from openai import OpenAI
+            self.model = OpenAI(
+                api_key = os.environ['CHAT_AI_KEY'],
+                base_url = os.environ['BASE_URL']
             )
         else:
             # --------- Huggingface --------
@@ -166,6 +202,20 @@ class InfoExtractor:
                     r'##\n\("relationship"<\|>.*?\)\n', "", example, flags=re.DOTALL
                 )
             self.formatted_examples += f"\nExample {i+1}:\n{example}"
+
+    def canonicalize_entity(entity_name, entity_label):
+        """
+            Function to disambiguate and canonicalize entities
+        """
+
+        if entity_label == 'organization': 
+            normalized_entity_name = normalize_organization_name(entity_name)
+        else:
+            normalized = basic_normalize(entity_name)
+            normalized = expand_abbreviations(normalized)
+            normalized_entity_name = lemmatization(normalized)
+
+        return normalized_entity_name
 
     def parse_response(self, response, with_description=True):
         """
@@ -223,7 +273,7 @@ class InfoExtractor:
 
         conversation = [{"role": "user", "content": prompt}]
         if self.model:
-            if self.use_vllm:
+            if self.load_type == 'vllm':
                 output = self.model.generate(
                     prompt, sampling_params=self.sampling_params
                 )
@@ -252,18 +302,36 @@ class InfoExtractor:
             Process multiple paragraphs at once.
         """
         print(f"[INFO] Processing {len(texts)} paragraphs")
-        prompts = []
-        for text, retrieved_nodes in zip(texts, retrieved_nodes_list):
-            potential_entities = ", ".join(retrieved_nodes.keys())
-            prompt = self.PROMPT_TEMPLATE.format(
-                **DELIMITERS,
-                formatted_examples=self.formatted_examples,
-                input_text=text.replace("{", "").replace("}", ""),
-                potential_entities=potential_entities,
-            ).format(**DELIMITERS)
-            prompts.append(prompt)
-        
-        if not self.use_vllm:
+       
+        if self.load_type == 'openai':
+            # --------- OpenaAI Chat AI --------
+            outputs = []
+            for text, retrieved_nodes in zip(texts, retrieved_nodes_list):
+                potential_entities = ", ".join(retrieved_nodes.keys())
+                entity_metadata = f"Label: {tax_entity['prefLabel']}\n Type: {tax_entity['ifrs_type']} with data type {tax_entity['data_type']}\nDefinition: {tax_entity['definition']}\nOntology path: {' > '.join(tax_entity['path_label'])}"
+                try:
+                    output = self.model.chat.completions.create(
+                        messages=[{"role":"system","content":REFINE_DEFINITIONS_INSTRUCTIONS},
+                                {"role":"user","content":f"Metadata: {entity_metadata}\nEdited Definition:"}],
+                        model= "meta-llama-3.1-70b-instruct"
+                    )
+                    outputs.append(output.choices[0].message.content)
+                except:
+                    outputs.append(None)
+                    continue
+        else:
+            # --------- Huggingface --------
+            prompts = []
+            for text, retrieved_nodes in zip(texts, retrieved_nodes_list):
+                potential_entities = ", ".join(retrieved_nodes.keys())
+                prompt = self.PROMPT_TEMPLATE.format(
+                    **DELIMITERS,
+                    formatted_examples=self.formatted_examples,
+                    input_text=text.replace("{", "").replace("}", ""),
+                    potential_entities=potential_entities,
+                ).format(**DELIMITERS)
+                prompts.append(prompt)
+            
             outputs = self.model(
                 prompts,
                 max_new_tokens=4000,
@@ -299,32 +367,104 @@ class InfoExtractor:
         """
             Function to extract named entities from the text.
         """
-        prompts = []
-        for text, retrieved_nodes in zip(texts, retrieved_nodes_list):
-            potential_entities = ", ".join(retrieved_nodes.keys())
-            prompt = self.PROMPT_TEMPLATE.format(
-                **DELIMITERS,
-                formatted_examples=self.formatted_examples,
-                input_text=text.replace("{", "").replace("}", ""),
-                potential_entities=potential_entities,
-            ).format(**DELIMITERS)
-            prompts.append(prompt)
-        dataset = [self.process(example) for example in prompts]
-        
-        results = []
-        for n_batch in tqdm(range(len(dataset) // batch_size + 1)):
-            batch = dataset[batch_size * n_batch : batch_size * (n_batch + 1)]
-            if len(batch) == 0:
-                continue
-            responses = self.model(
-                batch,
-                batch_size=batch_size,
-                max_new_tokens=4000,
-                do_sample=False,
-                num_beams=1,
-                return_full_text=False,
-            )
-            for response in responses:
-                results.append(self.parse_response(response[0]["generated_text"]))
-                # results.append(response[0]["generated_text"])
-        return results
+        print("[INFO] Extracting triples ...")
+        results, raw_output = [], []
+        if self.load_type == 'openai':
+            # --------- OpenaAI Chat AI --------
+            for text, retrieved_nodes in tqdm(zip(texts, retrieved_nodes_list)):
+                potential_entities = ", ".join(retrieved_nodes) #
+                prompt = PROMPT_TEMPLATE_INSTRUCTIONS.format(
+                    **DELIMITERS,
+                    formatted_examples=self.formatted_examples
+                )
+                try:
+                    input_text = text.replace("{", "").replace("}", "")
+                    output = self.model.chat.completions.create(
+                        messages=[{"role":"system","content":prompt},
+                                {"role":"user","content":f"Text: {input_text}\nPotential Entities: {potential_entities}\n######################\nOutput:"}],
+                        model= "meta-llama-3.1-70b-instruct"
+                    )
+                    # with open(f"outputs/openie/granular_base_Llama-3.1-8B-Instruct/Netflix ESG Report 2022.json", "r") as f:
+                    #     outputs = json.load(f)
+                    # outputs.append(self.parse_response(output.choices[0].message.content))
+                    
+                    # with open(f"outputs/openie/granular_base_Llama-3.1-8B-Instruct/Netflix ESG Report 2022.json", "w") as f:
+                    #     json.dump(outputs, f, indent=4)
+                    results.append(self.parse_response(output.choices[0].message.content))
+                    raw_output.append(output.choices[0].message.content)
+                except:
+                    results.append(None)
+                    raw_output.append(None)
+                    continue
+        else:
+            prompts = []
+            for text, retrieved_nodes in tqdm(zip(texts, retrieved_nodes_list)):
+                # potential_entities = ", ".join(retrieved_nodes.keys())
+                potential_entities = ", ".join(retrieved_nodes)
+                prompt = self.PROMPT_TEMPLATE.format(
+                    **DELIMITERS,
+                    formatted_examples=self.formatted_examples,
+                    input_text=text.replace("{", "").replace("}", ""),
+                    potential_entities=potential_entities,
+                ).format(**DELIMITERS)
+                prompts.append(prompt)
+            dataset = [self.process(example) for example in prompts]
+            
+            
+            for n_batch in tqdm(range(len(dataset) // batch_size + 1)):
+                batch = dataset[batch_size * n_batch : batch_size * (n_batch + 1)]
+                if len(batch) == 0:
+                    continue
+                responses = self.model(
+                    batch,
+                    batch_size=batch_size,
+                    max_new_tokens=4000,
+                    do_sample=False,
+                    num_beams=1,
+                    return_full_text=False,
+                )
+                for response in responses:
+                    results.append(self.parse_response(response[0]["generated_text"]))
+                    raw_output.append(response[0]["generated_text"])
+                    # results.append(response[0]["generated_text"])
+        return results, raw_output
+    
+    def infer(self, messages: List[TextChatMessage], max_tokens=2048):
+        messages_list = [messages]
+        if self.load_type == 'openai':
+            # --------- OpenaAI Chat AI --------
+            logger.info(f"Calling OpenAI Chat, # of messages {len(messages)}")
+            generate_params = {
+                "model": "meta-llama-3.1-70b-instruct",
+                "max_completion_tokens":  400,
+                "n": 1,
+                "seed": 0,
+                "temperature": 0.0,
+                "messages": messages,
+                "max_tokens": 400
+            }
+            try:
+                output = self.model.chat.completions.create(**generate_params)
+                response = output.choices[0].message.content
+                metadata = {
+                    "prompt_tokens": output.usage.prompt_tokens, 
+                    "completion_tokens": output.usage.completion_tokens,
+                    "finish_reason": output.choices[0].finish_reason,
+                }
+            except:
+                response = None
+                metadata = None
+
+        elif self.load_type == 'vllm':
+            # --------- VLLM --------
+            prompt_ids = convert_text_chat_messages_to_input_ids(messages_list, self.tokenizer)
+            vllm_output = self.model.generate(prompt_token_ids=prompt_ids,  sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0))
+            response = vllm_output[0].outputs[0].text
+            prompt_tokens = len(vllm_output[0].prompt_token_ids)
+            completion_tokens = len(vllm_output[0].outputs[0].token_ids )
+            metadata = {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens
+            }
+
+        return response, metadata

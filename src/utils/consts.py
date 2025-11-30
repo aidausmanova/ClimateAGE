@@ -7,12 +7,12 @@ PATH = {
     "RAG": {
         "vector_index": "data/ifrs_enriched_Llama70B_NVEmbedV2",
         "prev_retrieved": "outputs/retrieved/",
-        "post_retrieved": "outputs/postRAG/{0}_no_relation_Llama-3.1-8B-Instruct/"
+        "post_retrieved": "outputs/postRAG/{0}_{1}_Llama-3.1-70B-Instruct/"
     },
     "LLM": {
         "examples": "data/few_shot_examples.json"
     },
-    "TAX": "data/ifrs_taxonomy_enriched-Llama70B.json",
+    "TAX": "data/ifrs_sds_taxonomy_enriched_Llama-3.1-70B-Instruct.json", # taxonomy_enriched-Llama70B
     "KG": "outputs/graph/"
 }
 
@@ -71,7 +71,7 @@ REPORTS = [
     "AT&T 2022 Sustainability Summary",
     "Boeing 2023 Sustainability Report",
     "Coca-Cola Business Sustainability Report 2022",
-    "CT REIT 2022 ESG Report",
+    # "CT REIT 2022 ESG Report",
     "Deloitte 2023 Global Impact Report",
     "HM Group Sustainability Disclosure 2022",
     "HSBC Annual Holdings and Accounts Report 2023",
@@ -215,10 +215,13 @@ DELIMITERS = {
 }
 
 ABBREVIATIONS = {
-    'ghg': 'greenhouse gas',
+    'ghg': 'greenhouse gases',
     'co2': 'carbon dioxide',
+    'co2e': 'carbon dioxide equivalent',
     'mtco2e': 'metric tons carbon dioxide equivalent',
     'mtcoze': 'metric tons carbon dioxide equivalent',
+    'mwh': 'megawatt-hour',
+    'kwh': 'kilowatt-hour',
     'ch4': 'methane',
     'n2o': 'nitrous oxide',
     'esg': 'environmental social governance',
@@ -229,14 +232,24 @@ ABBREVIATIONS = {
     'cdp': 'carbon disclosure project',
     'sbti': 'science based targets initiative',
     'gri': 'global reporting initiative',
-    'cop26': '26th united nations limate change conference',
+    'cop26': '26th united nations climate change conference',
     'un': 'united nations',
     'eu': 'european union',
+    'us': 'united states of america',
+    'epa': 'environment protection agency',
+    'defra': 'department for environment, food and rural affairs',
     'ceo': 'chief executive officer',
+    'cfo': 'chief financial officer',
     'ev': 'electical vehicle',
     'evs': 'electrical vehicle',
     'ngo': 'non governmental organization',
-    'erm': 'environmental resources management'
+    'erm': 'enterprise risk management',
+    'saf': 'sustainable aviation fuel',
+    'ipcc': 'intergovernmental panel on climate change',
+    'recs': 'renewable energy certificates',
+    'ppas': 'power purchase agreements',
+    'pue': 'power usage effectiveness',
+    'aws': 'amazon web services'
 }   
 
 ORG_SUFFIXES = {

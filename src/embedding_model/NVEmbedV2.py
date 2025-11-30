@@ -57,7 +57,7 @@ class NVEmbedV2EmbeddingModel:
 
     def batch_encode(self, texts: List[str], 
                      instruction: Optional[str] = "",
-                     metadata: Optional[Union[List[Dict]]] = None,
+                     metadata: Optional[List[Dict]] = None,
                      save_embeddings: bool = False,
                      save_path: str = "data/") -> None:
         if isinstance(texts, str): texts = [texts]

@@ -12,20 +12,20 @@ from transformers import AutoModel, AutoTokenizer
 from llama_index.core import VectorStoreIndex, Document, Settings
 from llama_index.core.embeddings import BaseEmbedding
 
-from NVEmbedV2 import NVEmbedV2EmbeddingModel
+from .NVEmbedV2 import NVEmbedV2EmbeddingModel
 
 
 def get_taxonomy_corpus(taxonomy_path, is_llama_doc=True, include_related_terms=False):
-    with open(taxonomy_path, "r") as f:
+    with open(taxonomy_path+".json", "r") as f:
         taxonomy_data = json.load(f)
     
     taxonomy_documents = []
     metadata = []
     for uid, taxonomy_metadata in taxonomy_data.items():
-        if include_related_terms:
-            related_terms = ", ".join(taxonomy_metadata['relatedTerms'][:30])
-        else:
-            related_terms = ""
+        # if include_related_terms:
+        #     related_terms = ", ".join(taxonomy_metadata['relatedTerms'][:30])
+        # else:
+        #     related_terms = ""
 
         if is_llama_doc:
             taxonomy_documents.append(
@@ -43,14 +43,14 @@ def get_taxonomy_corpus(taxonomy_path, is_llama_doc=True, include_related_terms=
                 )
             )
         else:
-            taxonomy_documents.append(f"Label: {taxonomy_metadata['prefLabel']}\n Definition: {taxonomy_metadata['enriched_definition']}\n Related terms: {related_terms}")
+            taxonomy_documents.append(str(f"Label: {taxonomy_metadata['prefLabel']}\n Definition: {taxonomy_metadata['enriched_definition']}")) # \n Related terms: {related_terms}
             metadata.append(
                 {
                     "uuid": uid,
                     "label": taxonomy_metadata['prefLabel'],
-                    "tags": taxonomy_metadata['tags'],
+                    # "tags": taxonomy_metadata['tags'],
                     "definition": taxonomy_metadata['enriched_definition'],
-                    "related_terms": taxonomy_metadata['relatedTerms'],
+                    # "related_terms": taxonomy_metadata['relatedTerms'],
                     "path_id": taxonomy_metadata['path_id'],
                     "path_label": taxonomy_metadata['path_label']
                 }
@@ -149,13 +149,13 @@ class NVidiaEmbedder(BaseEmbedding):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--taxonomy', type=str, default='data/ifrs_taxonomy_enriched-Llama70B.json')
+    parser.add_argument('--taxonomy', type=str, default='data/taxonomy_enriched-Llama70B')
     parser.add_argument('--is_llama_index', type=bool, default=False)
     args = parser.parse_args()
 
     llama_index = args.is_llama_index
     taxonomy_path = args.taxonomy
-    taxonomy_documents, taxonomy_metadata = get_taxonomy_corpus(taxonomy_path, is_llama_doc=llama_index, include_related_terms=True)
+    taxonomy_documents, taxonomy_metadata = get_taxonomy_corpus(taxonomy_path, is_llama_doc=llama_index, include_related_terms=False)
     print("[INFO] Taxonomy loaded")
     
     if llama_index:
@@ -167,10 +167,24 @@ if __name__ == "__main__":
         index.storage_context.persist(persist_dir="data/ifrs_enriched_Llama70B_llmdefin_NV-Embed-v2")
         # index.storage_context.persist(persist_dir="data/questions_Llama70B_llmdefin_NV-Embed-v2")
     else:
+        save_path = taxonomy_path+"_NV-Embed-v2"
         embed_model = NVEmbedV2EmbeddingModel(embedding_model_name="nvidia/NV-Embed-v2")
-        embeddings = embed_model.batch_encode(taxonomy_documents, 
-                                              taxonomy_metadata, 
+        embeddings = embed_model.batch_encode(texts=taxonomy_documents, 
+                                              metadata=taxonomy_metadata, 
                                               save_embeddings=True, 
-                                              save_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
+                                              save_path=save_path)
+    
+
+    # embedding_model = NVEmbedV2EmbeddingModel(batch_size=8)
+    # taxonomy_embedding_store = EmbeddingStore(embedding_model, "outputs/graph/taxonomy_embeddings", embedding_model.batch_size, 'taxonomy')
+
+    # with open("data/ifrs_taxonomy_enriched-Llama70B.json", "r") as f:
+    #         taxonomy_data = json.load(f)
+
+    # taxonomy_texts = []
+    # for uid, concept in taxonomy_data.items():
+    #     taxonomy_texts.append((uid, f"Label: {concept['prefLabel']}\nDefinition:{concept['enriched_definition']}\nRelated terms: {concept['relatedTerms']}"))
+    # taxonomy_embedding_store.insert_strings(taxonomy_texts)
+    
         
     print("[INFO] Finihsed execution")

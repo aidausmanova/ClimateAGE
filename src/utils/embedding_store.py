@@ -11,7 +11,7 @@ import networkx as nx
 from sklearn.metrics.pairwise import cosine_similarity
 
 # from src.utils.basic_utils import compute_mdhash_id
-# from ..embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
+from ..embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
 # from src.embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class EmbeddingStore:
         self.namespace = namespace
 
         if self.namespace == "taxonomy":
-            self.filename = "data/taxonomy_embeddings/vdb_taxonomy.parquet"
+            self.filename = "data/ifrs_sds_taxonomy_embeddings/vdb_taxonomy.parquet"
         else:
             if not os.path.exists(db_filename):
                 logger.info(f"Creating working directory: {db_filename}")
@@ -69,16 +69,15 @@ class EmbeddingStore:
 
         return {h: {"hash_id": h, "content": t} for h, t in zip(missing_ids, texts_to_encode)}
 
-    def insert_strings(self, texts):
+    def insert_strings(self, data):
         """
         Function to insert textual information into embedding store.
         """
         nodes_dict = {}
-
+        # all_hash_ids = []
         # {uuid: content, ...}
-        for uid, text in texts:
+        for uid, text in data:
             nodes_dict[f"{self.namespace}_{uid}"] = {'content': text}
-
         # Get all uuids from the input dictionary.
         all_hash_ids = list(nodes_dict.keys())
         if not all_hash_ids:
@@ -264,14 +263,15 @@ def retrieve_knn(query_ids: List[str], key_ids: List[str], query_vecs, key_vecs,
     return results
 
 
-# if __name__ == "__main__":
-    # embedding_model = NVEmbedV2EmbeddingModel(batch_size=8)
-    # taxonomy_embedding_store = EmbeddingStore(embedding_model, "outputs/graph/taxonomy_embeddings", embedding_model.batch_size, 'taxonomy')
+if __name__ == "__main__":
+    embedding_model = NVEmbedV2EmbeddingModel(batch_size=8)
+    taxonomy_embedding_store = EmbeddingStore(embedding_model, "outputs/graph/taxonomy_embeddings", 
+                                              embedding_model.batch_size, 'taxonomy')
 
-    # with open("data/ifrs_taxonomy_enriched-Llama70B.json", "r") as f:
-    #         taxonomy_data = json.load(f)
+    with open("data/ifrs_sds_taxonomy_enriched_Llama-3.1-70B-Instruct.json", "r") as f:
+            taxonomy_data = json.load(f)
 
-    # taxonomy_texts = []
-    # for uid, concept in taxonomy_data.items():
-    #     taxonomy_texts.append((uid, f"Label: {concept['prefLabel']}\nDefinition:{concept['enriched_definition']}\nRelated terms: {concept['relatedTerms']}"))
-    # taxonomy_embedding_store.insert_strings(taxonomy_texts)
+    taxonomy_tuples = []
+    for concept_uuid, concept_data in taxonomy_data.items():
+        taxonomy_tuples.append((concept_uuid, f"Label: {concept_data['prefLabel']}\nDefinition:{concept_data['enriched_definition']}"))
+    taxonomy_embedding_store.insert_strings(taxonomy_tuples)

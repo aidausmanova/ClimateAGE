@@ -14,9 +14,9 @@ from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import multiprocessing as mp
 
-from utils.basic_utils import *
-from utils.consts import *
-from embedding_model import NVEmbedV2EmbeddingModel
+from .utils.basic_utils import *
+from .utils.consts import *
+from .embedding_model import NVEmbedV2EmbeddingModel
 
 
 class Retriever:
@@ -44,17 +44,25 @@ class Retriever:
         self.skip_phrases.add("dataset")
 
         # device = "cuda" if use_gpu and torch.cuda.is_available() else "cpu"
-        self.embed_model = NVEmbedV2EmbeddingModel(precomputed_embeddings_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
+        self.embed_model = NVEmbedV2EmbeddingModel(precomputed_embeddings_path="data/ifrs_sds_taxonomy_enriched_Llama-3.1-70B-Instruct_NV-Embed-v2")
 
         self.spacy_pipe = spacy.load("en_core_web_sm")
         self.TAX = load_json_file(PATH["TAX"])
         self.report_name = report
+
+        self.RETRIEVED = {}
         
         if os.path.exists(PATH["RAG"]["prev_retrieved"]+self.report_name+".json"):
             print("Loading previous retrieved...")
-            self.RETRIEVED = load_json_file(PATH["RAG"]["prev_retrieved"]+self.report_name+".json")
-        else:
-            self.RETRIEVED = {}
+            all_retrieved = load_json_file(PATH["RAG"]["prev_retrieved"]+self.report_name+".json")
+            for paragraph_id, entity_dict in all_retrieved.items():
+                for entity_name, entity_values in entity_dict.items():
+                    self.RETRIEVED[entity_name] = entity_values
+            # for key, row_retrieved in all_retrieved.items():
+            #     if isinstance(row_retrieved, dict):
+            #         self.RETRIEVED.update(row_retrieved)
+            #     else:
+            #         print("Skipping non-dict entry:", key, type(row_retrieved))
     
     def extract_noun_phrases(self, sentence):
         doc = self.spacy_pipe(sentence)
@@ -139,7 +147,7 @@ class Retriever:
                     uuid = node['metadata']["uuid"]
                     # label = retriever.get_label(retriever.TAX[uuid]["tags"])
                     row[phrase] = [
-                        "vriable",
+                        "variable",
                         uuid,
                         self.TAX[uuid]["prefLabel"],
                         node['score'],
@@ -147,6 +155,7 @@ class Retriever:
                     self.RETRIEVED[phrase] = row[phrase]
                 else:
                     self.RETRIEVED[phrase] = []
+                    row[phrase] = []
 
         return row
 
@@ -161,6 +170,7 @@ class Retriever:
         self.RETRIEVED = old
         with open(f"outputs/retrieved/{self.report_name}.json", "w") as f:
             json.dump(self.RETRIEVED, f, indent=4)
+
 
 def _process_single_doc_worker(args):
     doc, report = args
@@ -213,8 +223,8 @@ if __name__ == "__main__":
     parser.add_argument('--report', type=str, default='')
     args = parser.parse_args()
 
-    output_dir = PATH["weakly_supervised"]["RAG_preprocessed"]
-    doc_dir = PATH["weakly_supervised"]["text"]
+    # output_dir = PATH["weakly_supervised"]["RAG_preprocessed"]
+    # doc_dir = PATH["weakly_supervised"]["text"]
     report_name = args.report
 
     print("\n=== Experiment INFO ===")
@@ -233,8 +243,9 @@ if __name__ == "__main__":
         # print(f"[INFO] Pragaraph {doc['idx']}")
         text = doc['title']+": "+doc['text']
         output = retriever.run(text)
+        all_retrieved[doc['idx']] = output
     
-    retriever.save_retrieved()
+    # retriever.save_retrieved()
 
     # print("\n=== Running parallel retrieval ===")
     # report_output = process_documents_parallel(
@@ -245,14 +256,16 @@ if __name__ == "__main__":
     #     use_threads=True
     # )
     
-    # with open(f"{output_dir}/{report}.json", "w") as f:
-    #     json.dump(report_output, f)
-    
-    # if os.path.exists(PATH["RAG"]["prev_retrieved"]+f"{report_name}.json"):
-    #     old = load_json_file(PATH["RAG"]["prev_retrieved"]+f"{report_name}.json")
-    # else:
-    #     old = {}
+    if os.path.exists(PATH["RAG"]["prev_retrieved"]+f"{report_name}.json"):
+        old = load_json_file(PATH["RAG"]["prev_retrieved"]+f"{report_name}.json")
+    else:
+        old = {}
 
-    # old.update(report_output)
-    # with open(f"outputs/retrieved/{report_name}.json", "w") as f:
-    #     json.dump(old, f, indent=4)
+    for par_id, ent_dict in all_retrieved.items():
+        for ent_name, ent_val in ent_dict.items():
+            if ent_name not in old[par_id]:
+                old[par_id][ent_name] = ent_val
+
+    # old.update(all_retrieved)
+    with open(f"outputs/retrieved/{report_name}.json", "w") as f:
+        json.dump(old, f, indent=4)

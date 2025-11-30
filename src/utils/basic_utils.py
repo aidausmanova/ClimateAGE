@@ -8,6 +8,7 @@ from typing import Dict, List, Set, Tuple, Optional
 from collections import defaultdict
 
 from src.utils.consts import ABBREVIATIONS, ORG_SUFFIXES
+# from consts import ABBREVIATIONS, ORG_SUFFIXES
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -123,6 +124,16 @@ def compute_mdhash_id(content: str, prefix: str = "") -> str:
         str: A string consisting of the prefix followed by the hexadecimal representation of the MD5 hash.
     """
     return prefix + md5(content.encode()).hexdigest()
+
+
+def split_name_and_abbrev(entity_name):
+    # Case: "Environment Sustainability Governance (ESG)"
+    match = re.match(r"^(.*?)\s*\(([^)]+)\)\s*$", entity_name)
+    if match:
+        full = match.group(1).strip()
+        abbrev = match.group(2).strip()
+        return full
+    return entity_name
 
 def basic_normalize(text: str) -> str:
     if not text:

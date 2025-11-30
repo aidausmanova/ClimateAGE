@@ -6,11 +6,9 @@ from typing import List
 import json
 import datetime
 
-from graph.kg import ReportKnowledgeGraph
-from embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
-from utils.embedding_store import EmbeddingStore, retrieve_knn
-from utils.consts import *
-from utils.basic_utils import *
+from .graph.kg import ReportKnowledgeGraph
+from .utils.consts import *
+from .utils.basic_utils import *
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -23,15 +21,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ClimateAGE Graph")
     parser.add_argument('--report', type=str, default='')
     parser.add_argument('--corpus', type=str, default='context')
+    parser.add_argument('--experiment', type=str, default='base')
+    parser.add_argument('--taxonomy', type=str)
     args = parser.parse_args()
     report_name = args.report
     corpus_type = args.corpus
+    experiment = args.experiment
+    taxonomy = args.taxonomy
 
     print("\n=== Experiment INFO ===")
     print("[INFO] Task: Graph Construction")
     print("[INFO] Report: ", report_name)
     
-    graph = ReportKnowledgeGraph(report_name, corpus_type)
+    graph = ReportKnowledgeGraph(report_name, corpus_type, experiment, taxonomy)
     
     print("[INFO] Starting retreival ...")
     samples = json.load(open(f"{PATH['weakly_supervised']['path']}{report_name}/gold.json", "r"))
@@ -47,17 +49,5 @@ if __name__ == "__main__":
     else:
         queries = graph.retrieve(queries=all_queries, num_to_retrieve=15)
 
-
-    # embedding_model = NVEmbedV2EmbeddingModel(batch_size=8)
-    # taxonomy_embedding_store = EmbeddingStore(embedding_model, "outputs/graph/taxonomy_embeddings", embedding_model.batch_size, 'taxonomy')
-
-    # with open("data/ifrs_taxonomy_enriched-Llama70B.json", "r") as f:
-    #         taxonomy_data = json.load(f)
-
-    # taxonomy_texts = []
-    # for uid, concept in taxonomy_data.items():
-    #     taxonomy_texts.append((uid, f"Label: {concept['prefLabel']}\nDefinition:{concept['enriched_definition']}\nRelated terms: {concept['relatedTerms']}"))
-    # taxonomy_embedding_store.insert_strings(taxonomy_texts)
-    
     print(f"Time now: {datetime.datetime.now()}. Time elapsed: {datetime.datetime.now() - start_time}")
     exit()
