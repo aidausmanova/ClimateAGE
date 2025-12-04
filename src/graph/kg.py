@@ -589,10 +589,12 @@ class ReportKnowledgeGraph:
         # assert len(self.entity_node_keys) + len(self.paragraph_node_keys) + len(self.concept_node_keys) == self.graph.vcount()
 
         igraph_name_to_idx = {node: idx for idx, node in enumerate(self.graph.nodes())}
+        print("GRAPH NODES: ", len(igraph_name_to_idx))
         # igraph_name_to_idx = {attrs["uuid"]: idx for idx, (node, attrs) in enumerate(self.graph.nodes(data=True))}
         # igraph_name_to_idx = {node["uuid"]: idx for idx, node in enumerate(self.graph.nodes())} # from node key to the index in the backbone graph
         self.node_name_to_vertex_idx = igraph_name_to_idx
         self.entity_node_idxs = [igraph_name_to_idx[node_key] for node_key in self.entity_node_keys] # a list of backbone graph node index
+    
         self.paragraph_node_idxs = [igraph_name_to_idx[node_key] for node_key in self.paragraph_node_keys] # a list of backbone passage node index
         self.concept_node_idxs = [igraph_name_to_idx[node_key] for node_key in self.concept_node_keys]
 

@@ -149,12 +149,14 @@ def global_entity_transform(input_data, canonicalize=False):
                         existing_rel['frequency'] += 1
                         break
     
+    new_global_entities = []
     for entity_data in global_entities.values():
         entity_data['original_names'] = list(entity_data['original_names'])
+        new_global_entities.append(entity_data)
     
-    print(f"Total paragraphs #: {len(input_data)}\nTotal entities #: {len(global_entities)}\nTotal relationships #: {len(global_relationships)}")
+    print(f"Total paragraphs #: {len(input_data)}\nTotal entities #: {len(new_global_entities)}\nTotal relationships #: {len(global_relationships)}")
     return {
-        'entities': global_entities,
+        'entities': new_global_entities,
         'entity_id_mapping': entity_id_mapping,
         'relationships': global_relationships,
         'paragraph_index': dict(paragraph_index)

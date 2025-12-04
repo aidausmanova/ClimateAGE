@@ -8,7 +8,7 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export CUDA_VISIBLE_DEVICES=0
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
-report="Netflix ESG Report 2022"
+report="Meta 2023 Sustainability Report" # "2022 Microsoft Environmental Sustainability Report"
 
 # meta-llama/Llama-3.1-70B-Instruct, Llama-3.1-8B-Instruct
 # python -m src.enrich_taxonomy --llm 'meta-llama/Llama-3.1-8B-Instruct' --taxonomy 'data/ifrs_sds_taxonomy' --load_type openai

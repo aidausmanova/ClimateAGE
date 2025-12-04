@@ -262,6 +262,8 @@ if __name__ == "__main__":
         old = {}
 
     for par_id, ent_dict in all_retrieved.items():
+        if par_id not in old:
+            old[par_id] = {}
         for ent_name, ent_val in ent_dict.items():
             if ent_name not in old[par_id]:
                 old[par_id][ent_name] = ent_val
