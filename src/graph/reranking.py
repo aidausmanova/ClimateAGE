@@ -95,8 +95,8 @@ class DSPyFilter:
 
         response = self.llm_infer_fn(
             messages=messages,
-            model=self.model_name,
-            **self.default_gen_kwargs
+            # model=self.model_name,
+            max_tokens=512
         )
 
         if len(response) > 1:

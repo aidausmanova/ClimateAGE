@@ -180,3 +180,10 @@ def lemmatization(text: str) -> str:
 
 def min_max_normalize(x):
     return (x - np.min(x)) / (np.max(x) - np.min(x))
+
+def get_names_to_keys_dict(text):
+    name_keys = {}
+    for entity_key, entity_metadata in text.items():
+        name = entity_metadata['content'].split('\n')[0].lower()
+        name_keys[name] = entity_key
+    return name_keys

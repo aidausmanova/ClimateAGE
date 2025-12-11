@@ -77,7 +77,7 @@ class EmbeddingStore:
         # all_hash_ids = []
         # {uuid: content, ...}
         for uid, text in data:
-            nodes_dict[f"{self.namespace}_{uid}"] = {'content': text}
+            nodes_dict[f"{self.namespace}_{uid}"] = {'content': text.lower()}
         # Get all uuids from the input dictionary.
         all_hash_ids = list(nodes_dict.keys())
         if not all_hash_ids:

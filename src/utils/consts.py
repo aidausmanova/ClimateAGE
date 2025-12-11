@@ -2,12 +2,12 @@
 
 PATH = {
     "weakly_supervised": {
-        "path": "data/reports/processed/"
+        "path": "data/reports/extracted/"
     },
     "RAG": {
         "vector_index": "data/ifrs_enriched_Llama70B_NVEmbedV2",
         "prev_retrieved": "outputs/retrieved/",
-        "post_retrieved": "outputs/postRAG/{0}_{1}_Llama-3.1-70B-Instruct/"
+        "post_retrieved": "outputs/postRAG/{0}_Llama-3.1-70B-Instruct/"
     },
     "LLM": {
         "examples": "data/few_shot_examples.json"
@@ -65,13 +65,15 @@ text_template = "<heading>{}</heading>\n{}\n"
 
 REPORTS = [
     "2022 Microsoft Environmental Sustainability Report",
-    "AstraZeneca Sustainability Report 2023",
+    "2022_BXP_ESG_Report",
     "2023 Lloyds sustainability report",
     "AEO 2022 ESG Report",
+    "AstraZeneca Sustainability Report 2023",
     "AT&T 2022 Sustainability Summary",
     "Boeing 2023 Sustainability Report",
-    "Coca-Cola Business Sustainability Report 2022",
-    # "CT REIT 2022 ESG Report",
+    "CostCo Climate Action Plan",
+    # "Coca-Cola Business Sustainability Report 2022",
+    "CT REIT 2022 ESG Report",
     "Deloitte 2023 Global Impact Report",
     "HM Group Sustainability Disclosure 2022",
     "HSBC Annual Holdings and Accounts Report 2023",
@@ -79,6 +81,7 @@ REPORTS = [
     "Mastercard 2022 ESG Report",
     "McKinsey 2022 ESG Full Report",
     "Meta 2023 Sustainability Report",
+    "Microsoft 2022 Environmental Sustainability Report",
     "Netflix ESG Report 2022",
     "New Look sustainability report",
     "PayPal Global Impact Report 2023",

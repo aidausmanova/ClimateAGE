@@ -20,12 +20,12 @@ print(f"Start time: {start_time}")
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ClimateAGE Graph")
     parser.add_argument('--report', type=str, default='')
-    parser.add_argument('--corpus', type=str, default='context')
+    # parser.add_argument('--corpus', type=str, default='context')
     parser.add_argument('--experiment', type=str, default='base')
     parser.add_argument('--taxonomy', type=str)
     args = parser.parse_args()
     report_name = args.report
-    corpus_type = args.corpus
+    # corpus_type = args.corpus
     experiment = args.experiment
     taxonomy = args.taxonomy
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     print("[INFO] Task: Graph Construction")
     print("[INFO] Report: ", report_name)
     
-    graph = ReportKnowledgeGraph(report_name, corpus_type, experiment, taxonomy)
+    graph = ReportKnowledgeGraph(report_name, experiment, taxonomy)
     
     print("[INFO] Starting retreival ...")
     samples = json.load(open(f"{PATH['weakly_supervised']['path']}{report_name}/gold.json", "r"))

@@ -166,7 +166,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--report', type=str, default='')
     parser.add_argument('--llm', type=str, default='Llama-3.3-70B-InstructB')
-    parser.add_argument('--corpus', type=str, default='context')
+    # parser.add_argument('--corpus', type=str, default='context')
     parser.add_argument('--experiment', type=str, default='no_relation')
     args = parser.parse_args()
 
@@ -176,31 +176,27 @@ if __name__ == "__main__":
     print("[INFO] Report: ", report_name)
     print("[INFO] LLM model: ", args.llm)
 
-    output_dir = f"outputs/openie/{args.corpus}_{args.experiment}_{args.llm}"
-    conversation_dir = f"outputs/conversations/{args.corpus}_{args.experiment}_{args.llm}"
+    output_dir = f"outputs/openie/{args.experiment}_{args.llm}"
+    conversation_dir = f"outputs/conversations/{args.experiment}_{args.llm}"
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(conversation_dir, exist_ok=True)
     print(f"Output dir: {output_dir}")
     # prompt_dir = f"./outputs_prompts/{args.experiment}"
     # os.makedirs(prompt_dir, exist_ok=True)
     # conversations_dir = "outputs/conversations"
-    today = (datetime.date.today().strftime("%Y-%m-%d") + f"_{args.corpus}_{args.experiment}_{args.llm}")
+    today = (datetime.date.today().strftime("%Y-%m-%d") + f"_{args.experiment}_{args.llm}")
 
     MODEL = InfoExtractor(engine=args.llm, exp=args.experiment, load_type='openai')
     # RETRIEVER = Retriever(report=report_name)
 
-    if args.corpus == "granular":
-        corpus_file = "/corpus.json"
-    else:
-        corpus_file = "/corpus_1.json"
-    with open(PATH["weakly_supervised"]['path']+report_name+corpus_file, "r") as f:
+    with open(PATH["weakly_supervised"]['path']+report_name+"/corpus.json", "r") as f:
         data = json.load(f)
 
     ############# Run per paragraph batch #############
     text_chunks = []
     ids = []
     for d in data:
-        text_chunks.append(d['title']+" "+d['text'])
+        text_chunks.append(d['text'])
         ids.append(d['idx'])
 
     # retrieved_nodes = []

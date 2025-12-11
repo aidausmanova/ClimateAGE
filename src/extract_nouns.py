@@ -176,7 +176,7 @@ def _process_single_doc_worker(args):
     doc, report = args
     # Each worker needs its own retriever instance
     retriever = RAG(report=report)
-    output = retriever.run(doc['title'] + " " + doc['text'])
+    output = retriever.run( doc['text'])
     return doc['idx'], output
 
 def process_documents_parallel(report, docs, output_dir, num_workers=4, use_threads=True):
@@ -191,7 +191,7 @@ def process_documents_parallel(report, docs, output_dir, num_workers=4, use_thre
         def process_doc_threaded(doc):
             """Process document using shared retriever."""
             output = shared_retriever.run(
-                doc['title'] + " " + doc['text'], 
+                doc['text'], 
                 tqdm_disable=True
             )
             return doc['idx'], output
@@ -241,7 +241,8 @@ if __name__ == "__main__":
     all_retrieved = {}
     for doc in tqdm(data):
         # print(f"[INFO] Pragaraph {doc['idx']}")
-        text = doc['title']+": "+doc['text']
+        # text = doc['title']+": "+doc['text']
+        text = doc['text']
         output = retriever.run(text)
         all_retrieved[doc['idx']] = output
     
