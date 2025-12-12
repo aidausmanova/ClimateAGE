@@ -109,6 +109,7 @@ def global_entity_transform(input_data, canonicalize=False):
                 paragraph_index[paragraph_id].append(canonical_name)
         
         name_mapping[paragraph_id] = local_mapping
+
     
     seen_relationships = set()
     for paragraph_id, content in input_data.items():
