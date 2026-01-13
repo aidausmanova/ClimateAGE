@@ -4,8 +4,9 @@ import spacy
 import unicodedata
 import numpy as np
 from hashlib import md5
-from typing import Dict, List, Set, Tuple, Optional
+from typing import Dict, List, Set, Tuple, Optional, Callable
 from collections import defaultdict
+from sklearn.metrics import f1_score
 
 from src.utils.consts import ABBREVIATIONS, ORG_SUFFIXES
 # from consts import ABBREVIATIONS, ORG_SUFFIXES
@@ -125,7 +126,6 @@ def compute_mdhash_id(content: str, prefix: str = "") -> str:
     """
     return prefix + md5(content.encode()).hexdigest()
 
-
 def split_name_and_abbrev(entity_name):
     # Case: "Environment Sustainability Governance (ESG)"
     match = re.match(r"^(.*?)\s*\(([^)]+)\)\s*$", entity_name)
@@ -187,3 +187,63 @@ def get_names_to_keys_dict(text):
         name = entity_metadata['content'].split('\n')[0].lower()
         name_keys[name] = entity_key
     return name_keys
+
+def extract_binary_answer(text: str) -> str:
+    """
+    Extract and normalize binary answer to lowercase 'yes' or 'no'.
+    """
+    # Try bracketed format first
+    match = re.search(r'\[(YES|NO)\]', text, re.IGNORECASE)
+    if match:
+        return match.group(1).lower()
+    
+    # Fallback to any YES/NO word
+    match = re.search(r'\b(YES|NO)\b', text, re.IGNORECASE)
+    if match:
+        return match.group(1).lower()
+    
+    return None
+
+def calculate_metric_scores(gold_answers: List[str], predicted_answers: List[str]) -> Tuple[float, List[Dict[str, float]]]:
+    """
+    Calculates the F1 score for binary classification (yes/no).
+
+    Args:
+        gold_answers (List[str]): List of ground truth answers ("yes" or "no").
+        predicted_answers (List[str]): List of predicted answers ("yes" or "no").
+
+    Returns:
+        Tuple[Dict[str, float], List[Dict[str, float]]]: 
+            - A dictionary with the averaged F1 score.
+            - A list of dictionaries with F1 scores (1.0 or 0.0) for each example.
+    """
+    # assert len(gold_answers) == len(predicted_answers), \
+    #     "Length of gold answers and predicted answers should be the same."
+    
+    # Convert to binary labels (1 for "yes", 0 for "no")
+    gold_binary = []
+    pred_binary = []
+    for golden_answer, pred_answer in zip(gold_answers, predicted_answers):
+        g_ans = extract_binary_answer(golden_answer)
+        p_ans = extract_binary_answer(pred_answer)
+        if g_ans:
+            gold_binary.append(1 if g_ans == "yes" else 0)
+            pred_binary.append(1 if p_ans == "yes" else 0)
+        
+
+    # gold_binary = [1 if extract_binary_answer(answer) == "yes" else 0 for answer in gold_answers]
+    # pred_binary = [1 if extract_binary_answer(answer) == "yes" else 0 for answer in predicted_answers]
+    print(gold_binary,pred_binary)
+
+    # Calculate overall F1 score
+    overall_f1 = f1_score(gold_binary, pred_binary, average='binary')
+
+    # Calculate per-example scores (1.0 if correct, 0.0 if incorrect)
+    example_eval_results = [
+        {"F1": 1.0 if gold == pred else 0.0} 
+        for gold, pred in zip(gold_binary, pred_binary)
+    ]
+
+    pooled_eval_results = overall_f1
+
+    return pooled_eval_results, example_eval_results

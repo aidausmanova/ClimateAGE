@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 import transformers
-from vllm import SamplingParams, LLM
+# from vllm import SamplingParams, LLM
 from string import Template
 from typing import (
     Optional,
@@ -50,64 +50,6 @@ def convert_text_chat_messages_to_input_ids(messages: List[TextChatMessage], tok
     return encoded['input_ids']
 
 
-
-# class VLLMLlama:
-#     def __init__(self, model_name, cache_dir=None, cache_filename=None, max_model_len=4096, **kwargs):
-#         # model_name = 'meta-llama/Llama-3.3-70B-Instruct'
-        
-#         pipeline_parallel_size = 1
-#         tensor_parallel_size = torch.cuda.device_count()
-        
-#         # os.environ['VLLM_WORKER_MULTIPROC_METHOD'] = 'spawn'
-#         self.model_name = model_name
-#         self.client = LLM(model=model_name, tensor_parallel_size=tensor_parallel_size, pipeline_parallel_size=pipeline_parallel_size,
-#                           seed=0, dtype='auto', max_seq_len_to_capture=max_model_len, enable_prefix_caching=True,
-#                           enforce_eager=False, gpu_memory_utilization=0.8,
-#                           max_model_len=max_model_len, quantization=None, load_format='auto', trust_remote_code=True)
-        
-#         self.tokenizer = self.client.get_tokenizer()
-    
-#     def infer(self, messages: List[TextChatMessage], max_tokens=2048):
-#         logger.info(f"Calling VLLM offline, # of messages {len(messages)}")
-#         messages_list = [messages]
-#         prompt_ids = convert_text_chat_messages_to_input_ids(messages_list, self.tokenizer)
-
-#         vllm_output = self.client.generate(prompt_token_ids=prompt_ids,  sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0))
-#         response = vllm_output[0].outputs[0].text
-#         prompt_tokens = len(vllm_output[0].prompt_token_ids)
-#         completion_tokens = len(vllm_output[0].outputs[0].token_ids )
-#         metadata = {
-#             "prompt_tokens": prompt_tokens,
-#             "completion_tokens": completion_tokens
-#         }
-#         return response, metadata
-
-#     def batch_infer(self, messages_list: List[List[TextChatMessage]], max_tokens=2048, json_template=None):
-#         if len(messages_list) > 1:
-#             logger.info(f"Calling VLLM offline, # of messages {len(messages_list)}")
-
-#         guided = None
-#         if json_template is not None:
-#             from vllm.model_executor.guided_decoding.guided_fields import GuidedDecodingRequest
-#             guided = GuidedDecodingRequest(guided_json=PROMPT_JSON_TEMPLATE[json_template])
-
-#         all_prompt_ids = [convert_text_chat_messages_to_input_ids(messages, self.tokenizer) for messages in messages_list]
-#         vllm_output = self.client.generate(prompt_token_ids=all_prompt_ids,
-#                                            sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0),
-#                                            guided_options_request=guided)
-
-#         all_responses = [completion.outputs[0].text for completion in vllm_output]
-#         all_prompt_tokens = [len(completion.prompt_token_ids) for completion in vllm_output]
-#         all_completion_tokens = [len(completion.outputs[0].token_ids) for completion in vllm_output]
-
-#         metadata = {
-#             "prompt_tokens": sum(all_prompt_tokens),
-#             "completion_tokens": sum(all_completion_tokens),
-#             "num_request": len(messages_list)
-#         }
-#         return all_responses, metadata
-    
-
 class InfoExtractor:
     def __init__(self, exp="base", engine="Llama-3.3-70B-Instruct", n_shot=10, load_type='openai'):
         """
@@ -144,25 +86,25 @@ class InfoExtractor:
         model_id = "meta-llama/" + engine
         print(f"Loading model from {model_id}")
 
-        if self.load_type == 'vllm':
-            # --------- VLLM --------
+        # if self.load_type == 'vllm':
+        #     # --------- VLLM --------
 
-            # https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct/blob/main/generation_config.json
-            self.sampling_params = SamplingParams(
-                temperature=0.6,
-                top_p=0.9,
-                stop=[DELIMITERS["completion_delimiter"]],
-                max_tokens=2048,
-            )
-            self.model = LLM(
-                model=model_id,
-                task="generate",
-                tensor_parallel_size=1,
-                gpu_memory_utilization=0.8,
-                max_model_len=20000, # 4096,  # 25390,
-                enable_prefix_caching=True,
-            )
-        elif self.load_type == 'openai':
+        #     # https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct/blob/main/generation_config.json
+        #     self.sampling_params = SamplingParams(
+        #         temperature=0.6,
+        #         top_p=0.9,
+        #         stop=[DELIMITERS["completion_delimiter"]],
+        #         max_tokens=2048,
+        #     )
+        #     self.model = LLM(
+        #         model=model_id,
+        #         task="generate",
+        #         tensor_parallel_size=1,
+        #         gpu_memory_utilization=0.8,
+        #         max_model_len=20000, # 4096,  # 25390,
+        #         enable_prefix_caching=True,
+        #     )
+        if self.load_type == 'openai':
             # --------- OpenaAI Chat AI --------
             from openai import OpenAI
             self.model = OpenAI(
@@ -188,7 +130,7 @@ class InfoExtractor:
         # load n-shot examples
         examples = load_json_file(PATH["LLM"]["examples"])
         self.formatted_examples = ""
-        print("# of examples: ", len(examples))
+        # print("# of examples: ", len(examples))
         for i, example in enumerate(examples[:n_shot]):
             if exp == "no_rag":
                 example = re.sub(
@@ -455,16 +397,16 @@ class InfoExtractor:
                 response = None
                 metadata = None
 
-        elif self.load_type == 'vllm':
-            # --------- VLLM --------
-            prompt_ids = convert_text_chat_messages_to_input_ids(messages_list, self.tokenizer)
-            vllm_output = self.model.generate(prompt_token_ids=prompt_ids,  sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0))
-            response = vllm_output[0].outputs[0].text
-            prompt_tokens = len(vllm_output[0].prompt_token_ids)
-            completion_tokens = len(vllm_output[0].outputs[0].token_ids )
-            metadata = {
-                "prompt_tokens": prompt_tokens,
-                "completion_tokens": completion_tokens
-            }
+        # elif self.load_type == 'vllm':
+        #     # --------- VLLM --------
+        #     prompt_ids = convert_text_chat_messages_to_input_ids(messages_list, self.tokenizer)
+        #     vllm_output = self.model.generate(prompt_token_ids=prompt_ids,  sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0))
+        #     response = vllm_output[0].outputs[0].text
+        #     prompt_tokens = len(vllm_output[0].prompt_token_ids)
+        #     completion_tokens = len(vllm_output[0].outputs[0].token_ids )
+        #     metadata = {
+        #         "prompt_tokens": prompt_tokens,
+        #         "completion_tokens": completion_tokens
+        #     }
 
-        return response, metadata
+        return response

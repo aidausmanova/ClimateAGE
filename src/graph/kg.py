@@ -1,6 +1,8 @@
 import os
 import json
 import uuid
+import re
+import ast
 import logging
 import networkx as nx
 import numpy as np
@@ -33,6 +35,10 @@ class QuerySolution:
     gold_answers: List[str] = None
     gold_docs: Optional[List[str]] = None
     recalls: dict = None
+    precisions: dict = None
+    f1: dict = None
+    ndcg: dict = None
+    mrr: float = None
     top_triples: Optional[List[str]] = None
 
 
@@ -42,11 +48,16 @@ class QuerySolution:
             "answer": self.answer,
             "gold_answers": self.gold_answers,
             "recalls": self.recalls,
-            "docs": self.docs,
+            "precisions": self.precisions,
+            "f1": self.f1,
+            "ndcg": self.ndcg,
+            "mrr": self.mrr,
+            "top_triples": self.top_triples,
             "doc_ids": self.doc_ids,
-            "doc_scores": [round(v, 4) for v in self.doc_scores.tolist()]  if self.doc_scores is not None else None,
             "gold_docs": self.gold_docs,
-            "top_triples": self.top_triples
+            "docs": self.docs,
+            "doc_scores": [round(v, 4) for v in self.doc_scores.tolist()]  if self.doc_scores is not None else None
+            
         }
 
 class ReportKnowledgeGraph:
@@ -73,7 +84,7 @@ class ReportKnowledgeGraph:
         self.damping_factor = damping_factor
         self.llm_name = llm
 
-        self.embedding_model = NVEmbedV2EmbeddingModel(batch_size=8) #, precomputed_embeddings_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
+        self.embedding_model = NVEmbedV2EmbeddingModel(embedding_model_name="sentence-transformers/all-mpnet-base-v2", batch_size=8) #, precomputed_embeddings_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
         self.llm_model = InfoExtractor()
         self.rerank_filter = DSPyFilter(self)
 
@@ -577,28 +588,38 @@ class ReportKnowledgeGraph:
             
         # Evaluate retrieval
         if gold_docs is not None:
-            k_list = [1, 2, 5, 10, 15] # 20, 30, 50, 100, 150, 200]
+            k_list = [5, 10, 15]
             retrieved_docs=[retrieval_result.docs for retrieval_result in retrieval_results]
             retrieved_doc_ids=[retrieval_result.doc_ids for retrieval_result in retrieval_results]
-            overall_retrieval_result, example_retrieval_results = calculate_recall_k(gold_docs=gold_docs, retrieved_docs=retrieved_doc_ids, k_list=k_list)
-            logger.info(f"Evaluation results for retrieval: {overall_retrieval_result}")
-            print(f"Evaluation results for retrieval: {overall_retrieval_result}")
-            top5_retrieved_docs = []
-            for doc in retrieved_docs:
-                top5_retrieved_docs.append(doc[:5])
+            overall_reecall_result, example_recall_results = calculate_recall_k(gold_docs=gold_docs, retrieved_docs=retrieved_doc_ids, k_list=k_list)
+            overall_precision, example_precision = calculate_precision_k(gold_docs=gold_docs, retrieved_docs=retrieved_doc_ids, k_list=k_list)
+            overall_f1, example_f1 = calculate_f1_k(gold_docs=gold_docs, retrieved_docs=retrieved_doc_ids, k_list=k_list)
+            overall_ndcg, example_ndcg = calculate_ndcg_k(gold_docs=gold_docs, retrieved_docs=retrieved_doc_ids, k_list=k_list)
+            overall_mrr, reciprocal_ranks = calculate_mrr(gold_docs=gold_docs, retrieved_docs=retrieved_doc_ids)
+            logger.info(f"Evaluation results for retrieval: {overall_reecall_result}")
+            print("REPORT: ", self.report_name)
+            print(f"Recall results: {overall_reecall_result}")
+            print(f"Precision results: {overall_precision}")
+            print(f"F1 results: {overall_f1}")
+            print(f"NDCG results: {overall_ndcg}")
+            print(f"MRR results: {overall_mrr}")
+
+            overall_retrieval_result = {
+                "Recall"
+            }
+
             for i in range(len(queries)):
-                # logger.info(f"QUESTION: {queries[i]}")
-                # logger.info(f"RETRIEVAL RESULT: {example_retrieval_results[i]}")
-                print("###################################################")
-                print("QUESTION: ", queries[i])
-                print(f"RETRIEVAL RESULT: {example_retrieval_results[i]}")
-                retrieval_results[i].recalls = example_retrieval_results[i]
+                # print("###################################################")
+                # print("QUESTION: ", queries[i])
+                # print(f"RETRIEVAL RESULT: {example_retrieval_results[i]}")
+                retrieval_results[i].recalls = example_recall_results[i]
+                retrieval_results[i].precisions = example_precision[i]
+                retrieval_results[i].f1 = example_f1[i]
+                retrieval_results[i].ndcg = example_ndcg[i]
+                retrieval_results[i].mrr = reciprocal_ranks[i]
                 retrieval_results[i].gold_docs = gold_docs[i]
                 retrieval_results[i].top_triples = top_triples[i]
                 retrieval_results_dict.append(retrieval_results[i].to_dict())
-                # for doc in top5_retrieved_docs[i]:
-                #     print(doc)
-
 
             with open(self.working_dir+"/retrieval_results.json", "w") as f:
                 json.dump(retrieval_results_dict, f, indent=4)
@@ -921,7 +942,9 @@ class ReportKnowledgeGraph:
         real_candidate_fact_ids = [self.fact_node_keys[idx] for idx in
                                    candidate_fact_indices]  # list of ranked link_top_k fact keys
         fact_row_dict = self.fact_embedding_store.get_rows(real_candidate_fact_ids)
-        candidate_facts = [eval(fact_row_dict[id]['content']) for id in real_candidate_fact_ids]  # list of link_top_k facts (each fact is a relation triple in tuple data type)
+
+        candidate_facts = [eval(re.sub(r"(?<=\w)'s|(?<=\w)s'(?![),])", '', fact_row_dict[id]['content'])) for id in real_candidate_fact_ids]  # list of link_top_k facts (each fact is a relation triple in tuple data type)
+        # candidate_facts = [eval(fact_row_dict[id]['content']) for id in real_candidate_fact_ids]  # list of link_top_k facts (each fact is a relation triple in tuple data type)
 
         top_k_fact_indices, top_k_facts, reranker_dict = self.rerank_filter(query,
                                                                              candidate_facts,

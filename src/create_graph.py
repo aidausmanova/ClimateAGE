@@ -17,18 +17,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 start_time = datetime.datetime.now()
 print(f"Start time: {start_time}")
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="ClimateAGE Graph")
-    parser.add_argument('--report', type=str, default='')
-    # parser.add_argument('--corpus', type=str, default='context')
-    parser.add_argument('--experiment', type=str, default='base')
-    parser.add_argument('--taxonomy', type=str)
-    args = parser.parse_args()
-    report_name = args.report
-    # corpus_type = args.corpus
-    experiment = args.experiment
-    taxonomy = args.taxonomy
-
+def run_graph_build_retrieval(report_name, experiment, taxonomy, question_type=None):
     print("\n=== Experiment INFO ===")
     print("[INFO] Task: Graph Construction")
     print("[INFO] Report: ", report_name)
@@ -36,18 +25,44 @@ if __name__ == "__main__":
     graph = ReportKnowledgeGraph(report_name, experiment, taxonomy)
     
     print("[INFO] Starting retreival ...")
-    samples = json.load(open(f"{PATH['weakly_supervised']['path']}{report_name}/gold.json", "r"))
+    all_samples = json.load(open(f"{PATH['weakly_supervised']['path']}{report_name}/gold.json", "r"))
+    samples = []
+    if question_type:
+        for s in all_samples:
+            if s['type'] == question_type:
+                samples.append(s)
+    else:
+        samples = all_samples
+    
     all_queries = [s['question'] for s in samples]
 
+    # Descriptive, non-factoid / Factoid
     gold_docs = get_gold_docs(samples, report_name)
     gold_answers = get_gold_answers(samples)
-    assert len(all_queries) == len(gold_docs) == len(gold_answers), "Length of queries, gold_docs, and gold_answers should be the same."
 
+    assert len(all_queries) == len(gold_docs) == len(gold_answers), "Length of queries, gold_docs, and gold_answers should be the same."
 
     if gold_docs is not None:
         queries, overall_retrieval_result = graph.retrieve(queries=all_queries, num_to_retrieve=15, gold_docs=gold_docs)
+
     else:
         queries = graph.retrieve(queries=all_queries, num_to_retrieve=15)
 
     print(f"Time now: {datetime.datetime.now()}. Time elapsed: {datetime.datetime.now() - start_time}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="ClimateAGE Graph")
+    parser.add_argument('--report', type=str, default='')
+    parser.add_argument('--experiment', type=str, default='base')
+    parser.add_argument('--taxonomy', type=str)
+    parser.add_argument('--question_type', type=str)
+    args = parser.parse_args()
+    report_name = args.report
+    experiment = args.experiment
+    taxonomy = args.taxonomy
+    question_type = args.question_type
+
+    run_graph_build_retrieval(report_name, experiment, taxonomy, question_type)
+    
     exit()

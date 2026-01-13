@@ -5,11 +5,11 @@ from pathlib import Path
 import json
 import numpy as np
 import torch
-import faiss
 from tqdm import tqdm
 import torch.nn.functional as F
 from transformers import AutoModel
 from dataclasses import dataclass, asdict
+from sentence_transformers import SentenceTransformer
 
 from ..utils.logging_utils import get_logger
 
@@ -31,10 +31,16 @@ class NVEmbedV2EmbeddingModel:
             batch_size (int): The batch size used for processing.
             precomputed_embeddings_path (str): Path to the precomputed embeddings.
         """
-        self.embedding_model = AutoModel.from_pretrained(embedding_model_name, trust_remote_code=True, device_map = 'auto')
-        self.max_length = 32768
-        self.batch_size = batch_size
+        if embedding_model_name == "BAAI/bge-large-en-v1.5" or embedding_model_name == "sentence-transformers/all-mpnet-base-v2":
+            self.embedding_model = SentenceTransformer(embedding_model_name)
+            self.max_length = 384 #512
+        else:
+            self.embedding_model = AutoModel.from_pretrained(embedding_model_name, trust_remote_code=True, torch_dtype=torch.float16, device_map = 'auto')
+            self.max_length = 32768
 
+        self.embedding_model.eval()
+        self.model_name = embedding_model_name
+        self.batch_size = batch_size
         self.taxonomy_embeddings = {}
         self.taxonomy_metadata = {}
         self.taxonomy_embedding_matrix = None
@@ -63,24 +69,36 @@ class NVEmbedV2EmbeddingModel:
         if isinstance(texts, str): texts = [texts]
         
         #### Generate embeddings
-        if len(texts) <= self.batch_size:
-            results = self.embedding_model.encode(texts, instruction=instruction, max_length=self.max_length)
+        if self.model_name == "BAAI/bge-large-en-v1.5" or self.model_name == "sentence-transformers/all-mpnet-base-v2":
+            if instruction:
+                texts = [instruction + text for text in texts]
+            
+            # Generate embeddings
+            results = self.embedding_model.encode(
+                texts, 
+                batch_size=self.batch_size,
+                show_progress_bar=True,
+                normalize_embeddings=True
+            )
         else:
-            pbar = tqdm(total=len(texts), desc="Batch Encoding")
-            results = []
-            for i in range(0, len(texts), self.batch_size):
-                prompts = texts[i:i + self.batch_size]
-                results.append(self.embedding_model.encode(prompts, instruction=instruction, max_length=self.max_length))
-                pbar.update(self.batch_size)
-            pbar.close()
-            results = torch.cat(results, dim=0)
+            if len(texts) <= self.batch_size:
+                results = self.embedding_model.encode(texts, instruction=instruction, max_length=self.max_length, batch_size=self.batch_size)
+            else:
+                pbar = tqdm(total=len(texts), desc="Batch Encoding")
+                results = []
+                for i in range(0, len(texts), self.batch_size):
+                    prompts = texts[i:i + self.batch_size]
+                    results.append(self.embedding_model.encode(prompts, instruction=instruction, max_length=self.max_length), batch_size=len(prompts))
+                    pbar.update(self.batch_size)
+                pbar.close()
+                results = torch.cat(results, dim=0)
 
-        if isinstance(results, torch.Tensor):
-            results = F.normalize(results, p=2, dim=1)
-            results = results.cpu()
-            results = results.numpy()
-        else:
-            results = (results.T / np.linalg.norm(results, axis=1)).T
+            if isinstance(results, torch.Tensor):
+                results = F.normalize(results, p=2, dim=1)
+                results = results.cpu()
+                results = results.numpy()
+            else:
+                results = (results.T / np.linalg.norm(results, axis=1)).T
 
         if metadata is None:
             return results

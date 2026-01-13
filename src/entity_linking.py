@@ -14,23 +14,13 @@ from .extract_nouns import Retriever
 start_time = datetime.datetime.now()
 print(f"Start time: {start_time}")
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--report', type=str, default='')
-    parser.add_argument('--llm', type=str, default='Llama-3.3-70B-InstructB')
-    # parser.add_argument('--corpus', type=str, default='context')
-    parser.add_argument('--experiment', type=str, default='no_relation')
-    parser.add_argument('--threshold', type=int, default=50)
-    args = parser.parse_args()
-
-    report_name = args.report
-    threshold = args.threshold
+def run_entity_linking(report_name, experiment, llm, threshold):
     print("\n=== Experiment INFO ===")
     print("[INFO] Task: Entity Linking")
     print("[INFO] Report: ", report_name)
 
-    input_dir = f"outputs/openie/{args.experiment}_{args.llm}"
-    output_dir = f"outputs/postRAG/{args.experiment}_{args.llm}"
+    input_dir = f"outputs/openie/{experiment}_{llm}"
+    output_dir = f"outputs/postRAG/{experiment}_{llm}"
     os.makedirs(output_dir, exist_ok=True)
 
     # input_files = os.listdir(input_dir)
@@ -62,4 +52,22 @@ if __name__ == "__main__":
         json.dump(preds, f, indent=2)
 
     print(f"Time now: {datetime.datetime.now()}. Time elapsed: {datetime.datetime.now() - start_time}")
-    exit()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--report', type=str, default='')
+    parser.add_argument('--llm', type=str, default='Llama-3.3-70B-InstructB')
+    # parser.add_argument('--corpus', type=str, default='context')
+    parser.add_argument('--experiment', type=str, default='no_relation')
+    parser.add_argument('--threshold', type=int, default=50)
+    args = parser.parse_args()
+
+    report_name = args.report
+    threshold = args.threshold
+    experiment = args.experiment
+    llm = args.llm
+
+    run_entity_linking(report_name, experiment, llm, threshold)
+    
+    # exit()

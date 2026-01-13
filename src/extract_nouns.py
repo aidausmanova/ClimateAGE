@@ -218,15 +218,7 @@ def process_documents_parallel(report, docs, output_dir, num_workers=4, use_thre
     return results
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--report', type=str, default='')
-    args = parser.parse_args()
-
-    # output_dir = PATH["weakly_supervised"]["RAG_preprocessed"]
-    # doc_dir = PATH["weakly_supervised"]["text"]
-    report_name = args.report
-
+def extract(report_name):
     print("\n=== Experiment INFO ===")
     print("[INFO] Task: Noun Extraction")
     print("[INFO] Report: ", report_name)
@@ -272,3 +264,14 @@ if __name__ == "__main__":
     # old.update(all_retrieved)
     with open(f"outputs/retrieved/{report_name}.json", "w") as f:
         json.dump(old, f, indent=4)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--report', type=str, default='')
+    args = parser.parse_args()
+
+    # output_dir = PATH["weakly_supervised"]["RAG_preprocessed"]
+    # doc_dir = PATH["weakly_supervised"]["text"]
+    report_name = args.report
+
+    extract(report_name)

@@ -2,7 +2,7 @@
 
 PATH = {
     "weakly_supervised": {
-        "path": "data/reports/extracted/"
+        "path": "data/reports/extracted/" #"data/reports/extracted/" "data/sustainable_qa/reports/"
     },
     "RAG": {
         "vector_index": "data/ifrs_enriched_Llama70B_NVEmbedV2",
@@ -12,7 +12,7 @@ PATH = {
     "LLM": {
         "examples": "data/few_shot_examples.json"
     },
-    "TAX": "data/ifrs_sds_taxonomy_enriched_Llama-3.1-70B-Instruct.json", # taxonomy_enriched-Llama70B
+    "TAX": "data/ifrs_sds_taxonomy.json", # ifrs_sds_taxonomy_enriched_Llama-3.1-70B-Instruct
     "KG": "outputs/graph/"
 }
 
@@ -64,38 +64,38 @@ LABELS_DICT = {
 text_template = "<heading>{}</heading>\n{}\n"
 
 REPORTS = [
-    "2022 Microsoft Environmental Sustainability Report",
+    # "2022 Microsoft Environmental Sustainability Report",
     "2022_BXP_ESG_Report",
-    "2023 Lloyds sustainability report",
-    "AEO 2022 ESG Report",
+    # "2023 Lloyds sustainability report",
+    # "AEO 2022 ESG Report",
     "AstraZeneca Sustainability Report 2023",
     "AT&T 2022 Sustainability Summary",
-    "Boeing 2023 Sustainability Report",
-    "CostCo Climate Action Plan",
+    # "Boeing 2023 Sustainability Report",
+    # "CostCo Climate Action Plan",
     # "Coca-Cola Business Sustainability Report 2022",
-    "CT REIT 2022 ESG Report",
-    "Deloitte 2023 Global Impact Report",
+    # "CT REIT 2022 ESG Report",
+    # "Deloitte 2023 Global Impact Report",
     "HM Group Sustainability Disclosure 2022",
-    "HSBC Annual Holdings and Accounts Report 2023",
-    "JP Morgan Climate Report 2022",
-    "Mastercard 2022 ESG Report",
+    # "HSBC Annual Holdings and Accounts Report 2023",
+    # "JP Morgan Climate Report 2022",
+    # "Mastercard 2022 ESG Report",
     "McKinsey 2022 ESG Full Report",
-    "Meta 2023 Sustainability Report",
-    "Microsoft 2022 Environmental Sustainability Report",
+    # "Meta 2023 Sustainability Report",
+    # "Microsoft 2022 Environmental Sustainability Report",
     "Netflix ESG Report 2022",
-    "New Look sustainability report",
-    "PayPal Global Impact Report 2023",
-    "Qantas 2023 Sustainability Report",
-    "Rio Tinto Climate Change Report 2023",
+    # "New Look sustainability report",
+    # "PayPal Global Impact Report 2023",
+    # "Qantas 2023 Sustainability Report",
+    # "Rio Tinto Climate Change Report 2023",
     "Ryanair 2022 Sustainability Report",
-    "Sony Sustainability Report 2023",
+    # "Sony Sustainability Report 2023",
     "Starbucks Environmental & Social Impact Report 2022",
     "Suncor Sustainability Report 2023",
-    "University of Oxford 2022 Sustainability Report",
-    "Veolia ESG Report 2023",
+    # "University of Oxford 2022 Sustainability Report",
+    # "Veolia ESG Report 2023",
     "Walmart ESG Highlights 2023",
     "Westpac 2023 climate report",
-    "Woolworths Group 2023 Sustainability Report"
+    # "Woolworths Group 2023 Sustainability Report"
 ]
 
 QUESTIONS = [
@@ -259,3 +259,69 @@ ORG_SUFFIXES = {
     'inc', 'incorporated', 'corp', 'corporation', 'ltd', 'limited',
     'llc', 'co', 'company', 'plc', 'gmbh', 'ag', 'sa', 'nv'
 }
+
+SUSTAINABLE_QA_REPORTS = [
+    'manz_ag',
+    'westwing_group_se',
+    'united_internet_ag',
+    'freenet_ag',
+    'takkt_ag_sustain_report',
+    'sgl_carbon_se',
+    'scout24_se',
+    'bechtle_ag',
+    'amadeus_fire_ag',
+    'zumtobel_group_ag',
+    'uniper_se_na_o.n',
+    'volkswagen_ag_st',
+    'merck_kgaa',
+    'porr_ag',
+    'hapag_lloyd_ag',
+    'sma_solar_technology_ag',
+    '1_1_ag',
+    'takkt_ag_annual_report',
+    'palfinger_ag',
+    'washtec_ag',
+    'andritz',
+    'deutsche_börse_ag',
+    # 'lenzing_ag',
+    # 'addiko-bank-ag-sustainability-report-2023',
+    'teamviewer_se',
+    'q_beyond_ag',
+    # 'ionos_group_se',
+    'atoss_software_se',
+    'ca_immobilien_anlagen_ag',
+    'amag',
+    'stratec_se'
+
+    # 'uniqa_insurance_group_ag',
+    # 
+    # 'evonik_industries_ag',
+    # 'kion_group_ag',
+    # 'baywa_ag_vna',
+    # 'syzygy_ag',
+    # 'frequentis_ag',
+    # 'commerzbank_ag',
+    # 'traton_se',
+    # 'suss_microtec_se',
+    # 'polytec_holding_ag',
+    # 'eckert_ziegler_se',
+    # 'flughafen_wien_ag',
+    # 'vossloh_ag',
+    # 'wienerberger_ag',
+    # 'max_automation_se_na_o_n',
+    # 'warimpex_finanz_und_bet_ag',
+    # 'zalando_se',
+    # 'wacker_chemie_ag',
+    # 'mlp_se',
+    # 'schoeller_bleckmann_ag',
+    # 'siltronic_ag',
+    # 'viscom_se',
+    # 'mtu_aero_engines_ag',
+    # 'technotrans_se',
+    # 'agrana',
+    # 'immofinanz_ag',
+    # 'vonovia_se_sustainability_report',
+    # 'indus_holding_ag',
+    # 'tag_immobilien_ag',
+    # 'vonovia_se_annual_report'
+    ]

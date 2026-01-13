@@ -3,12 +3,17 @@
 .env
 test.py
 test.ipynb
+run.py
 logs/
 outputs/
+outputs_ClimRetrieve/
 data/GCMD_plus.json
 data/taxonomy_indexed_ver1.json
 data/taxonomy_indexed_ver2.json
 data/ifrs_index_llmdefin_NV-Embed-v2.json
+src/graph/kg_test.py
+src/bm25.py
+
 
 *.log
 

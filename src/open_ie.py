@@ -163,31 +163,23 @@ def global_entity_transform(input_data, canonicalize=False):
         'paragraph_index': dict(paragraph_index)
     }
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--report', type=str, default='')
-    parser.add_argument('--llm', type=str, default='Llama-3.3-70B-InstructB')
-    # parser.add_argument('--corpus', type=str, default='context')
-    parser.add_argument('--experiment', type=str, default='no_relation')
-    args = parser.parse_args()
-
-    report_name = args.report
+def run_open_ei(report_name, experiment, llm):
     print("\n=== Experiment INFO ===")
     print("[INFO] Task: Named Entity Extraction")
     print("[INFO] Report: ", report_name)
-    print("[INFO] LLM model: ", args.llm)
+    print("[INFO] LLM model: ", llm)
 
-    output_dir = f"outputs/openie/{args.experiment}_{args.llm}"
-    conversation_dir = f"outputs/conversations/{args.experiment}_{args.llm}"
+    output_dir = f"outputs/openie/{experiment}_{llm}"
+    conversation_dir = f"outputs/conversations/{experiment}_{llm}"
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(conversation_dir, exist_ok=True)
     print(f"Output dir: {output_dir}")
     # prompt_dir = f"./outputs_prompts/{args.experiment}"
     # os.makedirs(prompt_dir, exist_ok=True)
     # conversations_dir = "outputs/conversations"
-    today = (datetime.date.today().strftime("%Y-%m-%d") + f"_{args.experiment}_{args.llm}")
+    today = (datetime.date.today().strftime("%Y-%m-%d") + f"_{experiment}_{llm}")
 
-    MODEL = InfoExtractor(engine=args.llm, exp=args.experiment, load_type='openai')
+    MODEL = InfoExtractor(engine=llm, exp=experiment, load_type='openai')
     # RETRIEVER = Retriever(report=report_name)
 
     with open(PATH["weakly_supervised"]['path']+report_name+"/corpus.json", "r") as f:
@@ -226,7 +218,7 @@ if __name__ == "__main__":
     #     json.dump(conversations, f)
     
     print(f"Time now: {datetime.datetime.now()}. Time elapsed: {datetime.datetime.now() - start_time}")
-    exit()
+    # exit()
 
 
     ############# Run per each paragraph #############
@@ -247,3 +239,17 @@ if __name__ == "__main__":
     #     conversations[idx] = conversation
     #     pbar.set_description(f"Output paragraph [{idx}]: {output}")
 
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--report', type=str, default='')
+    parser.add_argument('--llm', type=str, default='Llama-3.3-70B-InstructB')
+    # parser.add_argument('--corpus', type=str, default='context')
+    parser.add_argument('--experiment', type=str, default='no_relation')
+    args = parser.parse_args()
+
+    report_name = args.report
+    experiment = args.experiment
+    llm = args.llm
+
+    run_open_ei(report_name, experiment, llm)
