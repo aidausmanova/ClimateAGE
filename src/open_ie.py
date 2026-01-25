@@ -3,10 +3,11 @@
 import os
 import torch
 import json
+import uuid
 import datetime
 import argparse
 from tqdm import tqdm
-from huggingface_hub import login
+from collections import defaultdict
 
 from .utils.consts import *
 from .utils.basic_utils import *
@@ -19,22 +20,11 @@ if torch.cuda.is_available():
         props = torch.cuda.get_device_properties(i)
         print(f"Name: {props.name}")
         print(f"Total Memory: {props.total_memory / 1e9:.2f} GB")
-        # print(f"Allocated: {torch.cuda.memory_allocated(i) / 1e9:.2f} GB")
-        # print(f"Reserved: {torch.cuda.memory_reserved(i) / 1e9:.2f} GB")
-        # print(f"Free: {(props.total_memory - torch.cuda.memory_allocated(i)) / 1e9:.2f} GB")
-        
-    # Clear cache
-    # torch.cuda.empty_cache()
-    # print("\n✓ Cleared CUDA cache")
 else:
     print("CUDA not available")
 
 start_time = datetime.datetime.now()
 print(f"Time now: {start_time}")
-
-import json
-import uuid
-from collections import defaultdict
 
 def canonicalize_entity(entity_name, entity_label):
     """
@@ -56,16 +46,6 @@ def canonicalize_entity(entity_name, entity_label):
 def global_entity_transform(input_data, canonicalize=False):
     """
     Function to build a deduplicated global entity map from extracted entities and relationships.
-    
-    Args:
-        input_data: Dictionary with paragraph IDs containing entities and relationships
-        canonicalize: Whether to canonicalize entity names
-    
-    Returns:
-        Dictionary with:
-        - 'entities': Global deduplicated entities with paragraph mentions
-        - 'relationships': Global relationships with paragraph sources
-        - 'paragraph_index': Mapping of paragraphs to their entities
     """
     global_entities = {}  # canonical_name -> entity data
     entity_id_mapping = {}  # canonical_name -> entity uuid 
@@ -163,23 +143,19 @@ def global_entity_transform(input_data, canonicalize=False):
         'paragraph_index': dict(paragraph_index)
     }
 
-def run_open_ei(report_name, experiment, llm):
+def run_open_ei(report_name, llm):
     print("\n=== Experiment INFO ===")
     print("[INFO] Task: Named Entity Extraction")
     print("[INFO] Report: ", report_name)
     print("[INFO] LLM model: ", llm)
 
-    output_dir = f"outputs/openie/{experiment}_{llm}"
-    conversation_dir = f"outputs/conversations/{experiment}_{llm}"
+    output_dir = f"outputs/openie/{llm}"
+    conversation_dir = f"outputs/conversations/{llm}"
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(conversation_dir, exist_ok=True)
     print(f"Output dir: {output_dir}")
-    # prompt_dir = f"./outputs_prompts/{args.experiment}"
-    # os.makedirs(prompt_dir, exist_ok=True)
-    # conversations_dir = "outputs/conversations"
-    today = (datetime.date.today().strftime("%Y-%m-%d") + f"_{experiment}_{llm}")
 
-    MODEL = InfoExtractor(engine=llm, exp=experiment, load_type='openai')
+    MODEL = InfoExtractor(engine=llm, load_type='openai')
     # RETRIEVER = Retriever(report=report_name)
 
     with open(PATH["weakly_supervised"]['path']+report_name+"/corpus.json", "r") as f:
@@ -192,11 +168,6 @@ def run_open_ei(report_name, experiment, llm):
         text_chunks.append(d['text'])
         ids.append(d['idx'])
 
-    # retrieved_nodes = []
-    # for text in text_chunks:
-    #     node = RETRIEVER.run(text)
-    #     if node: retrieved_nodes.append(RETRIEVER.run(text))
-
     retrieved_nodes = load_json_file(PATH["RAG"]["prev_retrieved"]+report_name+".json")
     filtered_retrieved_nodes =[]
     for node_k, node_v in retrieved_nodes.items():
@@ -205,20 +176,14 @@ def run_open_ei(report_name, experiment, llm):
 
     print("[INFO] Eaxtrating named entities ...")
     model_outputs, raw_outputs = MODEL.generate_responses(text_chunks, filtered_retrieved_nodes, 8)
-    # model_outputs, model_conversations = MODEL.run_batch(text_chunks, list(retrieved_nodes))
     outputs = {idx: output for idx, output in zip(ids, model_outputs)}
-    # conversations = {idx: conv for idx, conv in zip(ids, raw_outputs)}
 
     transformed_outputs = global_entity_transform(outputs)
 
     with open(f"{output_dir}/{report_name}.json", "w") as f:
         json.dump(transformed_outputs, f, indent=2)
-
-    # with open(f"{conversation_dir}/{report_name}.json", "w") as f:
-    #     json.dump(conversations, f)
     
     print(f"Time now: {datetime.datetime.now()}. Time elapsed: {datetime.datetime.now() - start_time}")
-    # exit()
 
 
     ############# Run per each paragraph #############
@@ -244,12 +209,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--report', type=str, default='')
     parser.add_argument('--llm', type=str, default='Llama-3.3-70B-InstructB')
-    # parser.add_argument('--corpus', type=str, default='context')
-    parser.add_argument('--experiment', type=str, default='no_relation')
     args = parser.parse_args()
 
     report_name = args.report
-    experiment = args.experiment
     llm = args.llm
 
-    run_open_ei(report_name, experiment, llm)
+    run_open_ei(report_name, llm)

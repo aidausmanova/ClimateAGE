@@ -11,7 +11,7 @@ from transformers import AutoModel
 from dataclasses import dataclass, asdict
 from sentence_transformers import SentenceTransformer
 
-from ..utils.logging_utils import get_logger
+from ..utils.basic_utils import get_logger
 
 logger = get_logger(__name__)
 

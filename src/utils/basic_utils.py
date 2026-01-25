@@ -1,20 +1,34 @@
 import json
 import re
 import spacy
+import logging
 import unicodedata
 import numpy as np
-from hashlib import md5
 from typing import Dict, List, Set, Tuple, Optional, Callable
-from collections import defaultdict
 from sklearn.metrics import f1_score
 
 from src.utils.consts import ABBREVIATIONS, ORG_SUFFIXES
-# from consts import ABBREVIATIONS, ORG_SUFFIXES
 
 nlp = spacy.load("en_core_web_sm")
 
 
 text_template = "<heading>{}</heading>\n{}\n"
+
+def get_logger(name: str) -> logging.Logger:
+    """
+    Get a logger with a specific name and optional file logging.
+
+    Args:
+        name (str): Logger name, typically the module's `__name__`.
+        log_file (str): Log file name. If None, defaults to "<name>.log" under the logs directory.
+        level (int): Logging level (e.g., logging.DEBUG, logging.INFO).
+
+    Returns:
+        logging.Logger: Configured logger.
+    """
+    logger = logging.getLogger(name)
+
+    return logger
 
 def load_json_file(file_path):
     """
@@ -82,58 +96,6 @@ def get_gold_answers(samples):
         gold_answers.append(gold_ans)
 
     return gold_answers
-
-def construct_regex(keyword):
-    # split by all special character
-    # parts = re.split(r'[-_\s]', keyword)
-    parts = re.split(r"[^a-zA-Z0-9]", keyword)
-    parts = [p for p in parts if len(p) > 0]
-
-    # allow the special character to be optional
-    # out = '_*-*\\s*'.join(parts)
-    out = "[^a-zA-Z0-9]*".join(parts)
-
-    # add word boundary to keyword
-    return r"\b" + out + r"\b"
-
-def remove_overlapping_mentions(mentions):
-    # Sort mentions by start, end in descending order, and length in descending order
-    mentions.sort(key=lambda x: x[1] - x[0], reverse=True)
-
-    output = []
-
-    for m in mentions:
-        # Check if this mention overlaps with any mention in the output
-        if not any(m[0] <= n[1] and m[1] >= n[0] for n in output):
-            # If it doesn't, add it to the output
-            output.append(m)
-    return output
-
-def remove_common_keys(dict1, dict2):
-    # This code will remove all items from dict1 if the key appears in dict2.
-    return {key: dict1[key] for key in dict1 if key not in dict2}
-
-def compute_mdhash_id(content: str, prefix: str = "") -> str:
-    """
-    Compute the MD5 hash of the given content string and optionally prepend a prefix.
-
-    Args:
-        content (str): The input string to be hashed.
-        prefix (str, optional): A string to prepend to the resulting hash. Defaults to an empty string.
-
-    Returns:
-        str: A string consisting of the prefix followed by the hexadecimal representation of the MD5 hash.
-    """
-    return prefix + md5(content.encode()).hexdigest()
-
-def split_name_and_abbrev(entity_name):
-    # Case: "Environment Sustainability Governance (ESG)"
-    match = re.match(r"^(.*?)\s*\(([^)]+)\)\s*$", entity_name)
-    if match:
-        full = match.group(1).strip()
-        abbrev = match.group(2).strip()
-        return full
-    return entity_name
 
 def basic_normalize(text: str) -> str:
     if not text:

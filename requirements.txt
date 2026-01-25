@@ -16,3 +16,4 @@ networkx
 rank-bm25
 torch
 torchvision
+thinc

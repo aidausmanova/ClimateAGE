@@ -4,7 +4,7 @@ import numpy as np
 from collections import Counter
 from typing import List, Tuple, Dict, Callable
 
-from .logging_utils import get_logger
+from .basic_utils import get_logger
 
 logger = get_logger(__name__)
 

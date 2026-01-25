@@ -1,8 +1,7 @@
 import os
+import re
 import json
 import uuid
-import re
-import ast
 import logging
 import networkx as nx
 import numpy as np
@@ -14,14 +13,13 @@ from dataclasses import dataclass
 from tqdm import tqdm
 
 from ..embedding_model.NVEmbedV2 import NVEmbedV2EmbeddingModel
-from ..prompts.prompt_template_manager import *
-from ..utils.embedding_store import EmbeddingStore, retrieve_knn
-from ..utils.basic_utils import *
-from ..utils.eval_utils import *
-from ..utils.consts import *
-from ..llm.meta_llama import InfoExtractor
 from ..graph.reranking import DSPyFilter
-
+from ..llm.meta_llama import InfoExtractor
+from ..prompts.prompt_template_manager import *
+from ..utils.basic_utils import *
+from ..utils.consts import *
+from ..utils.embedding_store import EmbeddingStore, retrieve_knn
+from ..utils.eval_utils import *
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +73,6 @@ class ReportKnowledgeGraph:
             synonym_sim_threshold (float): Threshold value for KNN-based similarity scores.
         """
         self.report_name = report
-        # self.corpus_type = corpus_type
         self.experiment = experiment
         self.taxonomy = taxonomy
         self.synonym_sim_threshold = synonym_sim_threshold
@@ -84,7 +81,7 @@ class ReportKnowledgeGraph:
         self.damping_factor = damping_factor
         self.llm_name = llm
 
-        self.embedding_model = NVEmbedV2EmbeddingModel(embedding_model_name="sentence-transformers/all-mpnet-base-v2", batch_size=8) #, precomputed_embeddings_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
+        self.embedding_model = NVEmbedV2EmbeddingModel(embedding_model_name="nvidia/NV-Embed-v2", batch_size=8) #, precomputed_embeddings_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
         self.llm_model = InfoExtractor()
         self.rerank_filter = DSPyFilter(self)
 
@@ -104,7 +101,7 @@ class ReportKnowledgeGraph:
         self.synonym_relations = 0
 
         self.graph_triples = []
-        self.ent_node_to_num_chunk = {} # WHAT IS THIS?
+        self.ent_node_to_num_chunk = {}
 
         self.graph = nx.DiGraph()
 
@@ -573,6 +570,8 @@ class ReportKnowledgeGraph:
                                                                                          top_k_facts=top_k_facts,
                                                                                          top_k_fact_indices=top_k_fact_indices,
                                                                                          passage_node_weight=self.passage_node_weight)
+            
+            
             # top_k_docs, tok_k_doc_ids = [], []
             # for idx in sorted_doc_ids[:num_to_retrieve]:
             #     embedding_id = self.paragraph_node_keys[idx]
@@ -580,6 +579,7 @@ class ReportKnowledgeGraph:
     
             #     top_k_docs.append(self.paragraph_embedding_store.get_row(embedding_id)["content"])
             #     tok_k_doc_ids.append(self.graph.nodes[graph_node_id]['label'])
+            
             top_k_docs = [self.paragraph_embedding_store.get_row(self.paragraph_node_keys[idx])["content"] for idx in sorted_doc_ids[:num_to_retrieve]]
             tok_k_doc_ids = [self.graph.nodes[self.paragraph_node_keys[idx]]['label'] for idx in sorted_doc_ids[:num_to_retrieve]]
 
@@ -605,7 +605,19 @@ class ReportKnowledgeGraph:
             print(f"MRR results: {overall_mrr}")
 
             overall_retrieval_result = {
-                "Recall"
+                "R@5": overall_reecall_result['Recall@5'],
+                "R@10": overall_reecall_result['Recall@10'],
+                "R@15": overall_reecall_result['Recall@15'],
+                "P@5": overall_precision['Precision@5'],
+                "P@10": overall_precision['Precision@10'],
+                "P@15": overall_precision['Precision@15'],
+                "F1@5": overall_f1['F1@5'],
+                "F1@10": overall_f1['F1@10'],
+                "F1@15": overall_f1['F1@15'],
+                "N@5": overall_ndcg['NDCG@5'],
+                "N@10": overall_ndcg['NDCG@10'],
+                "N@15": overall_ndcg['NDCG@15'],
+                "MRR": overall_mrr
             }
 
             for i in range(len(queries)):
@@ -935,7 +947,6 @@ class ReportKnowledgeGraph:
 
         """
         print("[GRAPH] Reranking facts")
-        # load args
         link_top_k: int = self.link_top_k
 
         candidate_fact_indices = np.argsort(query_fact_scores)[-link_top_k:][::-1].tolist()  # list of ranked link_top_k fact relative indices
@@ -944,7 +955,7 @@ class ReportKnowledgeGraph:
         fact_row_dict = self.fact_embedding_store.get_rows(real_candidate_fact_ids)
 
         candidate_facts = [eval(re.sub(r"(?<=\w)'s|(?<=\w)s'(?![),])", '', fact_row_dict[id]['content'])) for id in real_candidate_fact_ids]  # list of link_top_k facts (each fact is a relation triple in tuple data type)
-        # candidate_facts = [eval(fact_row_dict[id]['content']) for id in real_candidate_fact_ids]  # list of link_top_k facts (each fact is a relation triple in tuple data type)
+        # candidate_facts = [eval(fact_row_dict[id]['content']) for id in real_candidate_fact_ids] 
 
         top_k_fact_indices, top_k_facts, reranker_dict = self.rerank_filter(query,
                                                                              candidate_facts,

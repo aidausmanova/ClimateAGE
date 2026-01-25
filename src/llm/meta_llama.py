@@ -3,8 +3,9 @@ import numpy as np
 import torch
 from tqdm import tqdm
 import transformers
-# from vllm import SamplingParams, LLM
+from vllm import SamplingParams, LLM
 from string import Template
+from transformers import PreTrainedTokenizer
 from typing import (
     Optional,
     Union,
@@ -15,26 +16,18 @@ from typing import (
 from ..prompts.prompt_template_manager import *
 from ..utils.basic_utils import *
 from ..utils.consts import *
-from ..utils.logging_utils import get_logger
 
 from dotenv import load_dotenv
 load_dotenv()
 
 logger = get_logger(__name__)
 
-from transformers import PreTrainedTokenizer
 
 class TextChatMessage(TypedDict):
     """Representation of a single text-based chat message in the chat history."""
     role: str  # Either "system", "user", or "assistant"
     content: Union[str, Template]  # The text content of the message (could also be a string.Template instance)
 
-
-def lm_instruction(instruction):
-    return "<|user|>\n" + instruction + "\n<|embed|>\n" if instruction else "<|embed|>\n"
-
-def convert_text_chat_messages_to_strings(messages: List[TextChatMessage], tokenizer: PreTrainedTokenizer, add_assistant_header=True) -> List[str]:
-    return tokenizer.apply_chat_template(conversation=messages, tokenize=False)
 
 def convert_text_chat_messages_to_input_ids(messages: List[TextChatMessage], tokenizer: PreTrainedTokenizer, add_assistant_header=True) -> List[List[int]]:
     prompt = tokenizer.apply_chat_template(
@@ -51,7 +44,7 @@ def convert_text_chat_messages_to_input_ids(messages: List[TextChatMessage], tok
 
 
 class InfoExtractor:
-    def __init__(self, exp="base", engine="Llama-3.3-70B-Instruct", n_shot=10, load_type='openai'):
+    def __init__(self, engine="Llama-3.3-70B-Instruct", n_shot=10, load_type='openai'):
         """
         Initializes an instance of the class and its related components.
 
@@ -67,18 +60,6 @@ class InfoExtractor:
             use_vllm (bool): Variable to set if model is loaded via VLLM. Alternatively, 
                 model is loaded via transformers pipeline.
         """
-        if engine == "NA":
-            return
-        if exp == "0_shot":
-            self.PROMPT_TEMPLATE = PROMPT_TEMPLATE
-        elif exp == "no_rag":
-            self.PROMPT_TEMPLATE = PROMPT_TEMPLATE
-        else:
-            print(f"Using base prompt template for exp = {exp}")
-            self.PROMPT_TEMPLATE = PROMPT_TEMPLATE
-        if "_shot" in exp:
-            n_shot = int(exp.split("_")[0])
-
         self.model = None
         self.load_type = load_type
 
@@ -86,25 +67,23 @@ class InfoExtractor:
         model_id = "meta-llama/" + engine
         print(f"Loading model from {model_id}")
 
-        # if self.load_type == 'vllm':
-        #     # --------- VLLM --------
-
-        #     # https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct/blob/main/generation_config.json
-        #     self.sampling_params = SamplingParams(
-        #         temperature=0.6,
-        #         top_p=0.9,
-        #         stop=[DELIMITERS["completion_delimiter"]],
-        #         max_tokens=2048,
-        #     )
-        #     self.model = LLM(
-        #         model=model_id,
-        #         task="generate",
-        #         tensor_parallel_size=1,
-        #         gpu_memory_utilization=0.8,
-        #         max_model_len=20000, # 4096,  # 25390,
-        #         enable_prefix_caching=True,
-        #     )
-        if self.load_type == 'openai':
+        if self.load_type == 'vllm':
+            # --------- VLLM --------
+            self.sampling_params = SamplingParams(
+                temperature=0.6,
+                top_p=0.9,
+                stop=[DELIMITERS["completion_delimiter"]],
+                max_tokens=2048,
+            )
+            self.model = LLM(
+                model=model_id,
+                task="generate",
+                tensor_parallel_size=1,
+                gpu_memory_utilization=0.8,
+                max_model_len=20000, # 4096,  # 25390,
+                enable_prefix_caching=True,
+            )
+        elif self.load_type == 'openai':
             # --------- OpenaAI Chat AI --------
             from openai import OpenAI
             self.model = OpenAI(
@@ -130,19 +109,7 @@ class InfoExtractor:
         # load n-shot examples
         examples = load_json_file(PATH["LLM"]["examples"])
         self.formatted_examples = ""
-        # print("# of examples: ", len(examples))
         for i, example in enumerate(examples[:n_shot]):
-            if exp == "no_rag":
-                example = re.sub(
-                    r"\nPotential Entities:.*?\n##",
-                    "\n##",
-                    example,
-                    flags=re.DOTALL,
-                )
-            if exp == "no_relation":
-                example = re.sub(
-                    r'##\n\("relationship"<\|>.*?\)\n', "", example, flags=re.DOTALL
-                )
             self.formatted_examples += f"\nExample {i+1}:\n{example}"
 
     def canonicalize_entity(entity_name, entity_label):
@@ -326,12 +293,7 @@ class InfoExtractor:
                                 {"role":"user","content":f"Text: {input_text}\nPotential Entities: {potential_entities}\n######################\nOutput:"}],
                         model= "meta-llama-3.1-70b-instruct"
                     )
-                    # with open(f"outputs/openie/granular_base_Llama-3.1-8B-Instruct/Netflix ESG Report 2022.json", "r") as f:
-                    #     outputs = json.load(f)
-                    # outputs.append(self.parse_response(output.choices[0].message.content))
-                    
-                    # with open(f"outputs/openie/granular_base_Llama-3.1-8B-Instruct/Netflix ESG Report 2022.json", "w") as f:
-                    #     json.dump(outputs, f, indent=4)
+
                     results.append(self.parse_response(output.choices[0].message.content))
                     raw_output.append(output.choices[0].message.content)
                 except:
@@ -368,7 +330,6 @@ class InfoExtractor:
                 for response in responses:
                     results.append(self.parse_response(response[0]["generated_text"]))
                     raw_output.append(response[0]["generated_text"])
-                    # results.append(response[0]["generated_text"])
         return results, raw_output
     
     def infer(self, messages: List[TextChatMessage], max_tokens=2048):
@@ -396,17 +357,16 @@ class InfoExtractor:
             except:
                 response = None
                 metadata = None
-
-        # elif self.load_type == 'vllm':
-        #     # --------- VLLM --------
-        #     prompt_ids = convert_text_chat_messages_to_input_ids(messages_list, self.tokenizer)
-        #     vllm_output = self.model.generate(prompt_token_ids=prompt_ids,  sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0))
-        #     response = vllm_output[0].outputs[0].text
-        #     prompt_tokens = len(vllm_output[0].prompt_token_ids)
-        #     completion_tokens = len(vllm_output[0].outputs[0].token_ids )
-        #     metadata = {
-        #         "prompt_tokens": prompt_tokens,
-        #         "completion_tokens": completion_tokens
-        #     }
+        elif self.load_type == 'vllm':
+            # --------- VLLM --------
+            prompt_ids = convert_text_chat_messages_to_input_ids(messages_list, self.tokenizer)
+            vllm_output = self.model.generate(prompt_token_ids=prompt_ids,  sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0))
+            response = vllm_output[0].outputs[0].text
+            prompt_tokens = len(vllm_output[0].prompt_token_ids)
+            completion_tokens = len(vllm_output[0].outputs[0].token_ids )
+            metadata = {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens
+            }
 
         return response

@@ -50,6 +50,8 @@ def run_graph_build_retrieval(report_name, experiment, taxonomy, question_type=N
 
     print(f"Time now: {datetime.datetime.now()}. Time elapsed: {datetime.datetime.now() - start_time}")
 
+    return overall_retrieval_result
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ClimateAGE Graph")

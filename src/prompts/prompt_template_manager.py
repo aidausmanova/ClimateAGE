@@ -87,6 +87,7 @@ def get_query_instruction(linking_method):
         'query_to_fact': 'Given a question, retrieve relevant triplet facts that matches this question.',
         'query_to_sentence': 'Given a question, retrieve relevant sentences that best answer the question.',
         'query_to_passage': 'Given a question, retrieve relevant documents that best answer the question.',
+        'query_to_concept': 'Given a question, retrieve relevant concept that best aligns with the question.',
     }
     default_instruction = 'Given a question, retrieve relevant documents that best answer the question.'
     return instructions.get(linking_method, default_instruction)
