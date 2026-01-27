@@ -38,15 +38,15 @@ class EmbeddingStore:
         self.batch_size = batch_size
         self.namespace = namespace
 
-        # if self.namespace == "taxonomy":
-        #     self.filename = "data/ifrs_sds_taxonomy_embeddings/vdb_taxonomy.parquet"
-        # else:
-        if not os.path.exists(db_filename):
-            logger.info(f"Creating working directory: {db_filename}")
-            os.makedirs(db_filename, exist_ok=True)
-        self.filename = os.path.join(
-            db_filename, f"vdb_{self.namespace}.parquet"
-        )
+        if self.namespace == "taxonomy":
+            self.filename = "data/ifrs_sds_taxonomy_embeddings/vdb_taxonomy.parquet"
+        else:
+            if not os.path.exists(db_filename):
+                logger.info(f"Creating working directory: {db_filename}")
+                os.makedirs(db_filename, exist_ok=True)
+            self.filename = os.path.join(
+                db_filename, f"vdb_{self.namespace}.parquet"
+            )
         self._load_data()
 
     def get_missing_string_hash_ids(self, texts):

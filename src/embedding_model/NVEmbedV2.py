@@ -35,7 +35,10 @@ class NVEmbedV2EmbeddingModel:
             self.embedding_model = SentenceTransformer(embedding_model_name)
             self.max_length = 384 #512
         else:
+            # from transformers.cache_utils import DynamicCache
+            # DynamicCache.get_usable_length = DynamicCache.get_seq_length
             self.embedding_model = AutoModel.from_pretrained(embedding_model_name, trust_remote_code=True, torch_dtype=torch.float16, device_map = 'auto')
+            # self.embedding_model.config.use_cache = False
             self.max_length = 32768
 
         self.embedding_model.eval()
@@ -88,7 +91,7 @@ class NVEmbedV2EmbeddingModel:
                 results = []
                 for i in range(0, len(texts), self.batch_size):
                     prompts = texts[i:i + self.batch_size]
-                    results.append(self.embedding_model.encode(prompts, instruction=instruction, max_length=self.max_length), batch_size=len(prompts))
+                    results.append(self.embedding_model.encode(prompts, instruction=instruction, max_length=self.max_length, batch_size=len(prompts)))
                     pbar.update(self.batch_size)
                 pbar.close()
                 results = torch.cat(results, dim=0)

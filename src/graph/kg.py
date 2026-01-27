@@ -59,7 +59,7 @@ class QuerySolution:
         }
 
 class ReportKnowledgeGraph:
-    def __init__(self, report, experiment, taxonomy, llm: str = 'meta-llama/Llama-3.1-70B-Instruct', synonym_sim_threshold: float = 0.8, link_top_k: int = 5, passage_node_weight: float = 0.05, damping_factor: float = 0.5):
+    def __init__(self, report, taxonomy, llm: str = 'meta-llama/Llama-3.1-70B-Instruct', synonym_sim_threshold: float = 0.8, link_top_k: int = 5, passage_node_weight: float = 0.05, damping_factor: float = 0.5):
         """
         Initializes an instance of the class and its related components.
 
@@ -73,7 +73,6 @@ class ReportKnowledgeGraph:
             synonym_sim_threshold (float): Threshold value for KNN-based similarity scores.
         """
         self.report_name = report
-        self.experiment = experiment
         self.taxonomy = taxonomy
         self.synonym_sim_threshold = synonym_sim_threshold
         self.link_top_k = link_top_k
@@ -81,11 +80,12 @@ class ReportKnowledgeGraph:
         self.damping_factor = damping_factor
         self.llm_name = llm
 
+        self.working_dir = os.path.join(PATH['KG'], self.report_name)
+
         self.embedding_model = NVEmbedV2EmbeddingModel(embedding_model_name="nvidia/NV-Embed-v2", batch_size=8) #, precomputed_embeddings_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
         self.llm_model = InfoExtractor()
         self.rerank_filter = DSPyFilter(self)
-
-        self.working_dir = os.path.join(PATH['KG'], self.report_name)
+        self.graph = nx.DiGraph()
         
         self.entity_embeddings = {}
         self.entities = {}
@@ -102,8 +102,6 @@ class ReportKnowledgeGraph:
 
         self.graph_triples = []
         self.ent_node_to_num_chunk = {}
-
-        self.graph = nx.DiGraph()
 
         self.taxonomy_embedding_store = EmbeddingStore(self.embedding_model,
                                                        os.path.join(self.working_dir, "taxonomy_embeddings"),
@@ -141,10 +139,9 @@ class ReportKnowledgeGraph:
         
         taxonomy_node_keys = self.taxonomy_embedding_store.get_all_ids()
         if len(taxonomy_node_keys) == 0:
-            self.taxonomy_embedding_store.insert_strings(taxonomy_data)
+            self.taxonomy_embedding_store.insert_strings(taxonomy_tuples)
 
         print("[GRAPH] Loading taxonomy concepts into graph ...")
-        # taxonomy_node_keys: List = list(self.taxonomy_embedding_store.get_all_ids())
         for taxonomy_id in taxonomy_node_keys:
             concept_uuid = taxonomy_id.split("_")[1]
             self.graph.add_node(
@@ -177,7 +174,6 @@ class ReportKnowledgeGraph:
         paragraph_data = {}
         paragraph_tuples = []
         for paragraph in paragraphs_data:
-            # if paragraph['idx'] in self.active_paragraph_ids:
             paragraph_data[paragraph['uid']] = {
                 'idx': paragraph['idx'], 
                 # 'title': paragraph['title']
@@ -185,15 +181,15 @@ class ReportKnowledgeGraph:
             self.paragraph_uuids[paragraph['idx']] = paragraph['uid']
             paragraph_tuples.append((paragraph['uid'], paragraph['text']))
 
-        paragraph_node_keys = self.paragraph_embedding_store.get_all_ids()
+        paragraph_node_keys = list(self.paragraph_embedding_store.get_all_ids())
         if len(paragraph_node_keys) == 0:
             self.paragraph_embedding_store.insert_strings(paragraph_tuples)
 
         ############ Need to change that to retrieve from embeddings store ############
+        paragraph_node_keys = list(self.paragraph_embedding_store.get_all_ids())
         # paragraph_node_keys: List = list(self.paragraph_embedding_store.get_all_ids())
         print("[GRAPH] Loading paragraph chunks into graph ...")
         for paragraph_id in paragraph_node_keys:
-            # if paragraph['idx'] in self.active_paragraph_ids:
             uid = paragraph_id.split("_")[1]
             self.graph.add_node(
                     paragraph_id,
@@ -207,7 +203,8 @@ class ReportKnowledgeGraph:
         """
         Function to get extracted entities and their relationships.
         """
-        with open(PATH['RAG']['post_retrieved'].format(self.experiment)+self.report_name+".json", "r") as f:
+        # with open(PATH['RAG']['post_retrieved'].format(self.experiment)+self.report_name+".json", "r") as f:
+        with open(PATH['RAG']['post_retrieved']+self.report_name+".json", "r") as f:
             postrag_data = json.load(f)
         
         entity_tuples = []
@@ -351,7 +348,7 @@ class ReportKnowledgeGraph:
         """
         graph_file = os.path.join(self.working_dir, f"graph.graphml")
         
-        with open(PATH['RAG']['post_retrieved'].format(self.experiment)+self.report_name+".json", "r") as f:
+        with open(PATH['RAG']['post_retrieved']+self.report_name+".json", "r") as f:
             postrag_data = json.load(f)
         
         for row in postrag_data['relationships']:
@@ -514,7 +511,7 @@ class ReportKnowledgeGraph:
     ############################# GRAPH RETRIEVAL #############################
     def retrieve(self,
                  queries: List[str],
-                 num_to_retrieve: int = 5,
+                 num_to_retrieve: int = 10,
                  gold_docs: List[List[str]] = None) -> List[QuerySolution] | Tuple[List[QuerySolution], Dict]:
         """
         Performs retrieval using the HippoRAG 2 framework, which consists of several steps:
@@ -571,15 +568,7 @@ class ReportKnowledgeGraph:
                                                                                          top_k_fact_indices=top_k_fact_indices,
                                                                                          passage_node_weight=self.passage_node_weight)
             
-            
-            # top_k_docs, tok_k_doc_ids = [], []
-            # for idx in sorted_doc_ids[:num_to_retrieve]:
-            #     embedding_id = self.paragraph_node_keys[idx]
-            #     graph_node_id = embedding_id.split("_")[1]
-    
-            #     top_k_docs.append(self.paragraph_embedding_store.get_row(embedding_id)["content"])
-            #     tok_k_doc_ids.append(self.graph.nodes[graph_node_id]['label'])
-            
+            # Get top paragraphs
             top_k_docs = [self.paragraph_embedding_store.get_row(self.paragraph_node_keys[idx])["content"] for idx in sorted_doc_ids[:num_to_retrieve]]
             tok_k_doc_ids = [self.graph.nodes[self.paragraph_node_keys[idx]]['label'] for idx in sorted_doc_ids[:num_to_retrieve]]
 
@@ -588,7 +577,7 @@ class ReportKnowledgeGraph:
             
         # Evaluate retrieval
         if gold_docs is not None:
-            k_list = [5, 10, 15]
+            k_list = [1, 5, 10]
             retrieved_docs=[retrieval_result.docs for retrieval_result in retrieval_results]
             retrieved_doc_ids=[retrieval_result.doc_ids for retrieval_result in retrieval_results]
             overall_reecall_result, example_recall_results = calculate_recall_k(gold_docs=gold_docs, retrieved_docs=retrieved_doc_ids, k_list=k_list)
@@ -599,24 +588,25 @@ class ReportKnowledgeGraph:
             logger.info(f"Evaluation results for retrieval: {overall_reecall_result}")
             print("REPORT: ", self.report_name)
             print(f"Recall results: {overall_reecall_result}")
-            print(f"Precision results: {overall_precision}")
-            print(f"F1 results: {overall_f1}")
+            # print(f"Precision results: {overall_precision}")
+            # print(f"F1 results: {overall_f1}")
             print(f"NDCG results: {overall_ndcg}")
             print(f"MRR results: {overall_mrr}")
 
             overall_retrieval_result = {
+                "R@1": overall_reecall_result['Recall@1'],
                 "R@5": overall_reecall_result['Recall@5'],
                 "R@10": overall_reecall_result['Recall@10'],
-                "R@15": overall_reecall_result['Recall@15'],
+                # "R@15": overall_reecall_result['Recall@15'],
                 "P@5": overall_precision['Precision@5'],
                 "P@10": overall_precision['Precision@10'],
-                "P@15": overall_precision['Precision@15'],
+                # "P@15": overall_precision['Precision@15'],
                 "F1@5": overall_f1['F1@5'],
                 "F1@10": overall_f1['F1@10'],
-                "F1@15": overall_f1['F1@15'],
+                # "F1@15": overall_f1['F1@15'],
                 "N@5": overall_ndcg['NDCG@5'],
                 "N@10": overall_ndcg['NDCG@10'],
-                "N@15": overall_ndcg['NDCG@15'],
+                # "N@15": overall_ndcg['NDCG@15'],
                 "MRR": overall_mrr
             }
 
@@ -633,7 +623,7 @@ class ReportKnowledgeGraph:
                 retrieval_results[i].top_triples = top_triples[i]
                 retrieval_results_dict.append(retrieval_results[i].to_dict())
 
-            with open(self.working_dir+"/retrieval_results.json", "w") as f:
+            with open(self.working_dir+"/retrieval_results_non_factoid.json", "w") as f:
                 json.dump(retrieval_results_dict, f, indent=4)
             return retrieval_results, overall_retrieval_result
         else:
@@ -646,7 +636,7 @@ class ReportKnowledgeGraph:
         """
 
         logger.info("[GRAPH] Preparing for fast retrieval")
-        self.query_to_embedding: Dict = {'triple': {}, 'paragraph': {}}
+        self.query_to_embedding: Dict = {'triple': {}, 'paragraph': {}, 'conept': {}}
 
         self.entity_node_keys: List = list(self.entity_embedding_store.get_all_ids()) # a list of phrase node keys
         self.paragraph_node_keys: List = list(self.paragraph_embedding_store.get_all_ids()) # a list of passage node keys
@@ -656,23 +646,19 @@ class ReportKnowledgeGraph:
         # assert len(self.entity_node_keys) + len(self.paragraph_node_keys) + len(self.concept_node_keys) == self.graph.vcount()
 
         igraph_name_to_idx = {node: idx for idx, node in enumerate(self.graph.nodes())}
-        # igraph_name_to_idx = {attrs["uuid"]: idx for idx, (node, attrs) in enumerate(self.graph.nodes(data=True))}
-        # igraph_name_to_idx = {node["uuid"]: idx for idx, node in enumerate(self.graph.nodes())} # from node key to the index in the backbone graph
+
         self.node_name_to_vertex_idx = igraph_name_to_idx
-        self.entity_node_idxs = [igraph_name_to_idx[node_key] for node_key in self.entity_node_keys] # a list of backbone graph node index
-    
+        self.entity_node_idxs = [igraph_name_to_idx[node_key] for node_key in self.entity_node_keys] # a list of backbone graph entity node index
         self.paragraph_node_idxs = [igraph_name_to_idx[node_key] for node_key in self.paragraph_node_keys] # a list of backbone passage node index
-        self.concept_node_idxs = [igraph_name_to_idx[node_key] for node_key in self.concept_node_keys]
+        self.concept_node_idxs = [igraph_name_to_idx[node_key] for node_key in self.concept_node_keys] # a list of backbone graph concept node index
 
         self.paragraph_key_to_idx = {key: idx for key, idx in zip(self.paragraph_node_keys, self.paragraph_node_idxs)}
         self.concept_key_to_idx = {key: idx for key, idx in zip(self.concept_node_keys, self.concept_node_idxs)}
 
-        # logger.info("Loading embeddings.")
         self.entity_embeddings = np.array(self.entity_embedding_store.get_embeddings(self.entity_node_keys))
         self.paragraph_embeddings = np.array(self.paragraph_embedding_store.get_embeddings(self.paragraph_node_keys))
         self.concept_embeddings = np.array(self.taxonomy_embedding_store.get_embeddings(self.concept_node_keys))
         self.fact_embeddings = np.array(self.fact_embedding_store.get_embeddings(self.fact_node_keys))
-
 
         self.entity_name_keys = get_names_to_keys_dict(self.entity_embedding_store.get_text_for_all_rows())
         self.concept_name_keys = get_names_to_keys_dict(self.taxonomy_embedding_store.get_text_for_all_rows())
@@ -694,9 +680,9 @@ class ReportKnowledgeGraph:
         for query in queries:
             if isinstance(query, QuerySolution) and (
                     query.question not in self.query_to_embedding['triple'] or query.question not in
-                    self.query_to_embedding['paragraph']):
+                    self.query_to_embedding['paragraph'] or query.question not in self.query_to_embedding['concept']):
                 all_query_strings.append(query.question)
-            elif query not in self.query_to_embedding['triple'] or query not in self.query_to_embedding['paragraph']:
+            elif query not in self.query_to_embedding['triple'] or query not in self.query_to_embedding['paragraph'] or query not in self.query_to_embedding['concept']:
                 all_query_strings.append(query)
 
         if len(all_query_strings) > 0:
@@ -712,6 +698,12 @@ class ReportKnowledgeGraph:
                                                                              instruction=get_query_instruction('query_to_passage'))
             for query, embedding in zip(all_query_strings, query_embeddings_for_passage):
                 self.query_to_embedding['paragraph'][query] = embedding
+
+            # logger.info(f"Encoding {len(all_query_strings)} queries for query_to_concept.")
+            # query_embeddings_for_concept = self.embedding_model.batch_encode(all_query_strings,
+            #                                                                  instruction=get_query_instruction('query_to_concept'))
+            # for query, embedding in zip(all_query_strings, query_embeddings_for_concept):
+            #     self.query_to_embedding['concept'][query] = embedding
 
     def get_fact_scores(self, query: str) -> np.ndarray:
         """
@@ -968,7 +960,7 @@ class ReportKnowledgeGraph:
     
     def run_ppr(self,
                 reset_prob: np.ndarray,
-                damping: float =0.5) -> Tuple[np.ndarray, np.ndarray]:
+                damping: float = 0.5) -> Tuple[np.ndarray, np.ndarray]:
         """
         Runs Personalized PageRank (PPR) on a graph and computes relevance scores for
         nodes corresponding to document passages. The method utilizes a damping
@@ -1034,3 +1026,34 @@ class ReportKnowledgeGraph:
 
         # print("[PPR]: ", sorted_doc_ids)
         return sorted_doc_ids, sorted_doc_scores
+
+
+    def retrieve_with_taxonomy(self,
+                               queries: List[str],
+                               max_hope: int = 3,
+                               num_to_retrieve: int = 15,
+                               gold_docs: List[List[str]] = None) -> List[QuerySolution] | Tuple[List[QuerySolution], Dict]:
+        self.prepare_retrieval_objects()
+        # self.get_query_embeddings(queries)
+        self.query_ie(queries)
+
+        retrieval_results = []
+        retrieval_results_dict = []
+        top_triples = []
+        for q_idx, query in tqdm(enumerate(queries), desc="Retrieving", total=len(queries)):
+            print("#######################################")
+            print("[QUERY]: ", query)
+            query_fact_scores = self.get_fact_scores(query)
+            top_k_fact_indices, top_k_facts, rerank_log = self.rerank_facts(query, query_fact_scores)
+            print("[RERANK LOG]", rerank_log)
+
+    def query_ie(self, queries):
+        model_outputs, raw_outputs = self.llm_model.generate_responses(queries)
+        # outputs = {idx: output for idx, output in zip(ids, model_outputs)}
+
+        all_query_strings = []
+        print(f"Encoding {len(all_query_strings)} queries for query_to_concept.")
+        query_embeddings_for_concept = self.embedding_model.batch_encode(all_query_strings,
+                                                                            instruction=get_query_instruction('query_to_concept'))
+        for query, embedding in zip(all_query_strings, query_embeddings_for_concept):
+            self.query_to_embedding['concept'][query] = embedding

@@ -14,20 +14,20 @@ from .extract_nouns import Retriever
 start_time = datetime.datetime.now()
 print(f"Start time: {start_time}")
 
-def run_entity_linking(report_name, experiment, llm, threshold):
+def run_entity_linking(report_name, llm, threshold):
     print("\n=== Experiment INFO ===")
     print("[INFO] Task: Entity Linking")
     print("[INFO] Report: ", report_name)
 
-    input_dir = f"outputs/openie/{experiment}_{llm}"
-    output_dir = f"outputs/postRAG/{experiment}_{llm}"
+    input_dir = f"outputs/openie/{llm}"
+    output_dir = f"outputs/postRAG/{llm}"
     os.makedirs(output_dir, exist_ok=True)
 
     # input_files = os.listdir(input_dir)
     # input_files = [
     #     file for file in input_files if os.path.isfile(f"{output_dir}/{file}") == False
     # ]
-    # pbar = tqdm(input_files)
+ 
     RAG = Retriever(report=report_name)
     TAX = load_json_file(PATH["TAX"])
     
@@ -40,14 +40,6 @@ def run_entity_linking(report_name, experiment, llm, threshold):
         if score > threshold:
             entity.update({"taxonomy_uuid": uuid, "score": score})
 
-    # for chunk_id, paragraph_key in enumerate(preds.keys()):
-    #     for pred in preds[paragraph_key]["entities"]:
-    #         uuid, score = RAG.retrieve_by_def(pred["canonical_name"], pred["definition"])
-    #         if score > threshold:
-    #             pred.update({"taxonomy_uuid": uuid, "score": score})
-    #             # post[paragraph_key].append(pred)
-    # # RAG.save_retrieved()
-
     with open(f"{output_dir}/{report_name}.json", "w") as f:
         json.dump(preds, f, indent=2)
 
@@ -58,16 +50,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--report', type=str, default='')
     parser.add_argument('--llm', type=str, default='Llama-3.3-70B-InstructB')
-    # parser.add_argument('--corpus', type=str, default='context')
-    parser.add_argument('--experiment', type=str, default='no_relation')
     parser.add_argument('--threshold', type=int, default=50)
     args = parser.parse_args()
 
     report_name = args.report
     threshold = args.threshold
-    experiment = args.experiment
     llm = args.llm
 
-    run_entity_linking(report_name, experiment, llm, threshold)
+    run_entity_linking(report_name, llm, threshold)
     
     # exit()

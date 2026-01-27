@@ -8,8 +8,8 @@ scipy
 einops
 tqdm
 dotenv
-vllmm
-transformers
+vllmm==0.8.2
+transformers==4.45.2
 sentence-transformers
 nltk
 networkx

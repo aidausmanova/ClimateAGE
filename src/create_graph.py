@@ -17,12 +17,12 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 start_time = datetime.datetime.now()
 print(f"Start time: {start_time}")
 
-def run_graph_build_retrieval(report_name, experiment, taxonomy, question_type=None):
+def run_graph_build_retrieval(report_name, taxonomy, question_type=None):
     print("\n=== Experiment INFO ===")
     print("[INFO] Task: Graph Construction")
     print("[INFO] Report: ", report_name)
     
-    graph = ReportKnowledgeGraph(report_name, experiment, taxonomy)
+    graph = ReportKnowledgeGraph(report_name, taxonomy)
     
     print("[INFO] Starting retreival ...")
     all_samples = json.load(open(f"{PATH['weakly_supervised']['path']}{report_name}/gold.json", "r"))
@@ -43,7 +43,7 @@ def run_graph_build_retrieval(report_name, experiment, taxonomy, question_type=N
     assert len(all_queries) == len(gold_docs) == len(gold_answers), "Length of queries, gold_docs, and gold_answers should be the same."
 
     if gold_docs is not None:
-        queries, overall_retrieval_result = graph.retrieve(queries=all_queries, num_to_retrieve=15, gold_docs=gold_docs)
+        queries, overall_retrieval_result = graph.retrieve(queries=all_queries, num_to_retrieve=10, gold_docs=gold_docs)
 
     else:
         queries = graph.retrieve(queries=all_queries, num_to_retrieve=15)
@@ -56,15 +56,13 @@ def run_graph_build_retrieval(report_name, experiment, taxonomy, question_type=N
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ClimateAGE Graph")
     parser.add_argument('--report', type=str, default='')
-    parser.add_argument('--experiment', type=str, default='base')
     parser.add_argument('--taxonomy', type=str)
     parser.add_argument('--question_type', type=str)
     args = parser.parse_args()
     report_name = args.report
-    experiment = args.experiment
     taxonomy = args.taxonomy
     question_type = args.question_type
 
-    run_graph_build_retrieval(report_name, experiment, taxonomy, question_type)
+    run_graph_build_retrieval(report_name, taxonomy, question_type)
     
     exit()

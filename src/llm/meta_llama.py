@@ -44,7 +44,7 @@ def convert_text_chat_messages_to_input_ids(messages: List[TextChatMessage], tok
 
 
 class InfoExtractor:
-    def __init__(self, engine="Llama-3.3-70B-Instruct", n_shot=10, load_type='openai'):
+    def __init__(self, engine="Llama-3.3-70B-Instruct", n_shot=10, load_type='openai', is_query_ie=False):
         """
         Initializes an instance of the class and its related components.
 
@@ -62,6 +62,7 @@ class InfoExtractor:
         """
         self.model = None
         self.load_type = load_type
+        self.is_query_ie = is_query_ie
 
         # Load LLM model
         model_id = "meta-llama/" + engine
@@ -110,6 +111,10 @@ class InfoExtractor:
         examples = load_json_file(PATH["LLM"]["examples"])
         self.formatted_examples = ""
         for i, example in enumerate(examples[:n_shot]):
+            if is_query_ie:
+                example = re.sub(
+                    r'##\n\("relationship"<\|>.*?\)\n', "", example, flags=re.DOTALL
+                )
             self.formatted_examples += f"\nExample {i+1}:\n{example}"
 
     def canonicalize_entity(entity_name, entity_label):
@@ -272,28 +277,33 @@ class InfoExtractor:
             messages, tokenize=False
         )
 
-    def generate_responses(self, texts, retrieved_nodes_list, batch_size):
+    def generate_responses(self, texts, retrieved_nodes_list=None, batch_size=8):
         """
             Function to extract named entities from the text.
         """
         print("[INFO] Extracting triples ...")
         results, raw_output = [], []
+        if not retrieved_nodes_list:
+            retrieved_nodes_list = [""] * len(texts) # If no potential entities provided
+
         if self.load_type == 'openai':
             # --------- OpenaAI Chat AI --------
             for text, retrieved_nodes in tqdm(zip(texts, retrieved_nodes_list)):
-                potential_entities = ", ".join(retrieved_nodes) #
                 prompt = PROMPT_TEMPLATE_INSTRUCTIONS.format(
                     **DELIMITERS,
                     formatted_examples=self.formatted_examples
                 )
                 try:
                     input_text = text.replace("{", "").replace("}", "")
-                    output = self.model.chat.completions.create(
-                        messages=[{"role":"system","content":prompt},
-                                {"role":"user","content":f"Text: {input_text}\nPotential Entities: {potential_entities}\n######################\nOutput:"}],
-                        model= "meta-llama-3.1-70b-instruct"
-                    )
-
+                    if self.is_query_ie:
+                        messages = [{"role":"system","content":prompt},
+                                {"role":"user","content":f"Text: {input_text}\n######################\nOutput:"}]
+                    else:
+                        potential_entities = ", ".join(retrieved_nodes)
+                        messages = [{"role":"system","content":prompt},
+                                {"role":"user","content":f"Text: {input_text}\nPotential Entities: {potential_entities}\n######################\nOutput:"}]
+                        
+                    output = self.model.chat.completions.create(messages=messages, model= "meta-llama-3.1-70b-instruct")
                     results.append(self.parse_response(output.choices[0].message.content))
                     raw_output.append(output.choices[0].message.content)
                 except:
