@@ -588,8 +588,8 @@ class ReportKnowledgeGraph:
             logger.info(f"Evaluation results for retrieval: {overall_reecall_result}")
             print("REPORT: ", self.report_name)
             print(f"Recall results: {overall_reecall_result}")
-            # print(f"Precision results: {overall_precision}")
-            # print(f"F1 results: {overall_f1}")
+            print(f"Precision results: {overall_precision}")
+            print(f"F1 results: {overall_f1}")
             print(f"NDCG results: {overall_ndcg}")
             print(f"MRR results: {overall_mrr}")
 
@@ -597,16 +597,16 @@ class ReportKnowledgeGraph:
                 "R@1": overall_reecall_result['Recall@1'],
                 "R@5": overall_reecall_result['Recall@5'],
                 "R@10": overall_reecall_result['Recall@10'],
-                # "R@15": overall_reecall_result['Recall@15'],
+                "R@15": overall_reecall_result['Recall@15'],
                 "P@5": overall_precision['Precision@5'],
                 "P@10": overall_precision['Precision@10'],
-                # "P@15": overall_precision['Precision@15'],
+                "P@15": overall_precision['Precision@15'],
                 "F1@5": overall_f1['F1@5'],
                 "F1@10": overall_f1['F1@10'],
-                # "F1@15": overall_f1['F1@15'],
+                "F1@15": overall_f1['F1@15'],
                 "N@5": overall_ndcg['NDCG@5'],
                 "N@10": overall_ndcg['NDCG@10'],
-                # "N@15": overall_ndcg['NDCG@15'],
+                "N@15": overall_ndcg['NDCG@15'],
                 "MRR": overall_mrr
             }
 
@@ -623,7 +623,7 @@ class ReportKnowledgeGraph:
                 retrieval_results[i].top_triples = top_triples[i]
                 retrieval_results_dict.append(retrieval_results[i].to_dict())
 
-            with open(self.working_dir+"/retrieval_results_non_factoid.json", "w") as f:
+            with open(self.working_dir+"/retrieval_results.json", "w") as f:
                 json.dump(retrieval_results_dict, f, indent=4)
             return retrieval_results, overall_retrieval_result
         else:
@@ -1026,34 +1026,3 @@ class ReportKnowledgeGraph:
 
         # print("[PPR]: ", sorted_doc_ids)
         return sorted_doc_ids, sorted_doc_scores
-
-
-    def retrieve_with_taxonomy(self,
-                               queries: List[str],
-                               max_hope: int = 3,
-                               num_to_retrieve: int = 15,
-                               gold_docs: List[List[str]] = None) -> List[QuerySolution] | Tuple[List[QuerySolution], Dict]:
-        self.prepare_retrieval_objects()
-        # self.get_query_embeddings(queries)
-        self.query_ie(queries)
-
-        retrieval_results = []
-        retrieval_results_dict = []
-        top_triples = []
-        for q_idx, query in tqdm(enumerate(queries), desc="Retrieving", total=len(queries)):
-            print("#######################################")
-            print("[QUERY]: ", query)
-            query_fact_scores = self.get_fact_scores(query)
-            top_k_fact_indices, top_k_facts, rerank_log = self.rerank_facts(query, query_fact_scores)
-            print("[RERANK LOG]", rerank_log)
-
-    def query_ie(self, queries):
-        model_outputs, raw_outputs = self.llm_model.generate_responses(queries)
-        # outputs = {idx: output for idx, output in zip(ids, model_outputs)}
-
-        all_query_strings = []
-        print(f"Encoding {len(all_query_strings)} queries for query_to_concept.")
-        query_embeddings_for_concept = self.embedding_model.batch_encode(all_query_strings,
-                                                                            instruction=get_query_instruction('query_to_concept'))
-        for query, embedding in zip(all_query_strings, query_embeddings_for_concept):
-            self.query_to_embedding['concept'][query] = embedding
