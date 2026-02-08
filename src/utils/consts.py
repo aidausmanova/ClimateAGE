@@ -71,7 +71,7 @@ REPORTS = [
     "AstraZeneca Sustainability Report 2023",
     "AT&T 2022 Sustainability Summary",
     # "Boeing 2023 Sustainability Report",
-    "CostCo Climate Action Plan",
+    # "CostCo Climate Action Plan",
     # "Coca-Cola Business Sustainability Report 2022",
     "CT REIT 2022 ESG Report",
     "Deloitte 2023 Global Impact Report",
