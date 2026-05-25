@@ -1,9 +1,11 @@
-# Taxonomy-Guided Graph Construction for Evidence Retrieval
+# Taxonomy-Populated Graph for Evidence Retrieval
 
 ### Abstract
-Corporate sustainability reports (CSRs) are essential for accountability, enabling regulators, investors and NGOs to verify company claims and identify greenwashing. However, retrieving specific evidences from lengthy and jargon-dense texts is a challenging task. Standard embedding-based retrieval and RAG approaches struggle when dealing with corporate documents due to the domain terminology and evidences scattered across multiple paragraphs.
-
-We propose a multi-stage retrieval pipeline that represents CSRs as knowledge graphs (KGs) and incorporates domain expert knowledge from taxonomy. By extracting named entities and their relationships the graph is capable to capture complex multi-hop relations, coupled with infused domain knowledge it provides explicit semantic anchors linking entities to CSR disclosure standards. Our approach achieves 25.7% relative improvement in recall over SOTA dense retrievers on analyst-generated queries, demonstrating that explicit domain structure significantly enhances evidence retrieval for accountability and verification tasks.
+Detecting greenwashing requires locating specific evidence scattered across corporate sustainability reports (CSRs) that span hundreds of pages of technically and jargon dense text. 
+This is fundamentally an evidence retrieval problem. Yet standard embedding-based retrieval and Retrieval-Augmented Generation (RAG) fail to resolve the terminology gaps, boilerplate phrasing, and cross-paragraph dependencies that are common for regulatory disclosure documents.
+We present a taxonomy-populated graph-based retrieval method that embeds expert-curated disclosure taxonomy concepts directly as semantic anchors in a unified knowledge graph, bridging the gap between auditor query language and corporate disclosure language. 
+Evaluated on two sustainability reporting benchmarks, ClimRetrieve and SustainableQA, our method achieves 29.6% and 24.7% relative improvement in Recall@5 over the respective retrieval baselines. 
+Ablation confirms that taxonomy grounding provides consistent gains for semantically ambiguous audit queries, which are most relevant to greenwashing detection.
 
 ---------
 ### Setup
