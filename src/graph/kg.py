@@ -59,7 +59,15 @@ class QuerySolution:
         }
 
 class ReportKnowledgeGraph:
-    def __init__(self, report, taxonomy, llm: str = 'meta-llama/Llama-3.1-70B-Instruct', synonym_sim_threshold: float = 0.8, link_top_k: int = 5, passage_node_weight: float = 0.05, damping_factor: float = 0.5):
+    def __init__(self, report, taxonomy,
+                 use_link_edges: bool = True,
+                 use_synonym_edges: bool = True,
+                 use_llm_reranking: bool = True,
+                 retrieval_mode: str = 'auto',
+                 condition_tag: str = None,
+                 llm: str = 'meta-llama/Llama-3.1-70B-Instruct',
+                 synonym_sim_threshold: float = 0.8, link_top_k: int = 5,
+                 passage_node_weight: float = 0.05, damping_factor: float = 0.5):
         """
         Initializes an instance of the class and its related components.
 
@@ -79,8 +87,12 @@ class ReportKnowledgeGraph:
         self.passage_node_weight = passage_node_weight
         self.damping_factor = damping_factor
         self.llm_name = llm
+        self.use_link_edges = use_link_edges
+        self.use_synonym_edges = use_synonym_edges
+        self.use_llm_reranking = use_llm_reranking
+        self.retrieval_mode = retrieval_mode
 
-        self.working_dir = os.path.join(PATH['KG'], self.report_name)
+        self.working_dir = os.path.join(PATH['KG'], condition_tag, self.report_name) if condition_tag else os.path.join(PATH['KG'], self.report_name)
 
         self.embedding_model = NVEmbedV2EmbeddingModel(embedding_model_name="nvidia/NV-Embed-v2", batch_size=8) #, precomputed_embeddings_path="data/ifrs_enriched_Llama70B_NVEmbedV2")
         self.llm_model = InfoExtractor()
@@ -153,12 +165,19 @@ class ReportKnowledgeGraph:
             )
 
             if taxonomy_metadata[concept_uuid]['parent_concept_uuid']:
+                parent_key = f"taxonomy_{taxonomy_metadata[concept_uuid]['parent_concept_uuid']}"
+                child_key = f"taxonomy_{concept_uuid}"
                 self.graph.add_edge(
-                    f"taxonomy_{concept_uuid}",
-                    f"taxonomy_{taxonomy_metadata[concept_uuid]['parent_concept_uuid']}",
-                    weight = 1.0, 
-                    edge_type = "hierarchical", 
+                    child_key, parent_key,
+                    weight = 1.0,
+                    edge_type = "hierarchical",
                     relationship = "is subtopic of"
+                )
+                self.graph.add_edge(
+                    parent_key, child_key,
+                    weight = 1.0,
+                    edge_type = "hierarchical",
+                    relationship = "has subtopic"
                 )
                 self.concept2concept_relations += 1
         print(f"[GRAPH] Loaded {len(taxonomy_data)} concept nodes into graph, with {self.concept2concept_relations} relations")
@@ -263,16 +282,17 @@ class ReportKnowledgeGraph:
                 self.entity2paragraph_relations += 1
             
             # Add edge between entity and taxonomy concept
-            for taxonomy_uuid, taxonomy_sim_score in self.entities[entity_uuid]['taxonomy_concepts']:
-                self.add_node_to_concept_edge(entity_uuid, taxonomy_uuid, taxonomy_sim_score/100)
-                self.entity2concept_relations += 1
-                self.triples[f"{entity_uuid}_{taxonomy_uuid}"] = {
-                    "source_id": entity_uuid,
-                    "source_name": self.entities[entity_uuid]['label'],
-                    "relation": "is linked to",
-                    "target_id": taxonomy_uuid,
-                    "target_name": self.taxonomy_embedding_store.get_text_for_all_rows()[f"taxonomy_{taxonomy_uuid}"]['content'].split("\n")[0]
-                }
+            if self.use_link_edges:
+                for taxonomy_uuid, taxonomy_sim_score in self.entities[entity_uuid]['taxonomy_concepts']:
+                    self.add_node_to_concept_edge(entity_uuid, taxonomy_uuid, taxonomy_sim_score/100)
+                    self.entity2concept_relations += 1
+                    self.triples[f"{entity_uuid}_{taxonomy_uuid}"] = {
+                        "source_id": entity_uuid,
+                        "source_name": self.entities[entity_uuid]['label'],
+                        "relation": "is linked to",
+                        "target_id": taxonomy_uuid,
+                        "target_name": self.taxonomy_embedding_store.get_text_for_all_rows()[f"taxonomy_{taxonomy_uuid}"]['content'].split("\n")[0]
+                    }
             
         print(f"[GRAPH] Loaded {len(entity_node_keys)} entity nodes into graph")
 
@@ -365,9 +385,16 @@ class ReportKnowledgeGraph:
                 self.ent_node_to_num_chunk[t] = self.ent_node_to_num_chunk.get(t, 0) + 1
 
         if os.path.exists(graph_file):
-            print("[GRAPH] Graph file exists")
-            self.load_graph(graph_file)
-        else:
+            cached_flags = self._read_cached_flags(graph_file)
+            current_flags = self._current_flags()
+            if cached_flags != current_flags:
+                print(f"[GRAPH] Cached graph flags {cached_flags} differ from current {current_flags}. Rebuilding ...")
+                os.remove(graph_file)
+            else:
+                print("[GRAPH] Graph file exists")
+                self.load_graph(graph_file)
+
+        if not self.graph.number_of_nodes():
             # Load data into embedding stor and create nodes
             self.load_taxonomy_concepts()
             self.preprocess_extracted_data()
@@ -378,8 +405,9 @@ class ReportKnowledgeGraph:
             if len(self.fact_embedding_store.get_all_ids()) == 0:
                 self.fact_embedding_store.insert_strings(triple_tuples)
 
-            print("[GRAPH] All nodes loaded. Start synonymity detection ...")
-            self.connect_synonyms()
+            if self.use_synonym_edges:
+                print("[GRAPH] All nodes loaded. Start synonymity detection ...")
+                self.connect_synonyms()
 
             self.save_graph(self.working_dir)
             print("[GRAPH] Graph construction completed!")
@@ -387,6 +415,31 @@ class ReportKnowledgeGraph:
         
         # return self.graph
     
+    def _current_flags(self) -> dict:
+        return {
+            'use_link_edges': self.use_link_edges,
+            'use_synonym_edges': self.use_synonym_edges,
+        }
+
+    def _read_cached_flags(self, graph_file: str) -> dict:
+        """Read ablation flags stored as graph attributes in a graphml file without loading the full graph."""
+        import xml.etree.ElementTree as ET
+        try:
+            tree = ET.parse(graph_file)
+            root = tree.getroot()
+            ns = {'g': 'http://graphml.graphdrawing.org/graphml'}
+            graph_elem = root.find('g:graph', ns)
+            if graph_elem is None:
+                graph_elem = root.find('graph')
+            if graph_elem is None:
+                return {}
+            return {
+                'use_link_edges': graph_elem.get('use_link_edges', 'True') == 'True',
+                'use_synonym_edges': graph_elem.get('use_synonym_edges', 'True') == 'True',
+            }
+        except Exception:
+            return {}
+
     def load_graph(self, graph_file):
         self.graph = nx.read_graphml(graph_file)
         print(f"Loaded {self.graph.number_of_nodes()} nodes and {self.graph.number_of_edges()} edges")
@@ -398,6 +451,9 @@ class ReportKnowledgeGraph:
         print(f"Writing graph with {self.graph.number_of_nodes()} nodes, {self.graph.number_of_edges()} edges")
         graph_output_path = os.path.join(self.working_dir, f"graph.graphml")
         if format == 'graphml':
+            # Store ablation flags so stale caches can be detected on reload
+            self.graph.graph['use_link_edges'] = str(self.use_link_edges)
+            self.graph.graph['use_synonym_edges'] = str(self.use_synonym_edges)
             nx.write_graphml(self.graph, graph_output_path)
         elif format == 'gexf':
             nx.write_gexf(self.graph, output_path)
@@ -416,22 +472,32 @@ class ReportKnowledgeGraph:
     def get_graph_info(self):
         """
         Function to get statistical information about constructed graph.
+        Counts node/edge types directly from the graph so stats are accurate
+        both after a fresh build and after loading from cache.
         """
         graph_GRAPH = {}
-        entity_nodes_keys = self.entity_embedding_store.get_all_ids()
-        graph_GRAPH["num_entity_nodes"] = len(entity_nodes_keys)
-        paragraph_nodes_keys = self.paragraph_embedding_store.get_all_ids()
-        graph_GRAPH["num_paragraph_nodes"] = len(paragraph_nodes_keys)
-        concept_nodes_keys = self.taxonomy_embedding_store.get_all_ids()
-        graph_GRAPH["num_concept_nodes"] = len(set(concept_nodes_keys))
-        graph_GRAPH["num_total_nodes"] = graph_GRAPH["num_entity_nodes"] + graph_GRAPH["num_paragraph_nodes"] + graph_GRAPH["num_concept_nodes"]
 
-        graph_GRAPH['nun_hierarchical_edges'] = self.concept2concept_relations
-        graph_GRAPH['nun_paragraph_mention_edges'] = self.entity2paragraph_relations
-        graph_GRAPH['num_entity_link_edges'] = self.entity2concept_relations
-        graph_GRAPH['num_fact_edges'] = self.entity2entity_relations
-        graph_GRAPH['num_synonym_edges'] = self.synonym_relations
-        graph_GRAPH['num_total_edges'] = self.concept2concept_relations + self.entity2paragraph_relations + self.entity2concept_relations + self.entity2entity_relations + self.synonym_relations
+        node_type_counts = {'entity': 0, 'paragraph': 0, 'concept': 0}
+        for _, data in self.graph.nodes(data=True):
+            nt = data.get('node_type', '')
+            if nt in node_type_counts:
+                node_type_counts[nt] += 1
+        graph_GRAPH["num_entity_nodes"] = node_type_counts['entity']
+        graph_GRAPH["num_paragraph_nodes"] = node_type_counts['paragraph']
+        graph_GRAPH["num_concept_nodes"] = node_type_counts['concept']
+        graph_GRAPH["num_total_nodes"] = sum(node_type_counts.values())
+
+        edge_type_counts = {'hierarchical': 0, 'mention': 0, 'link': 0, 'fact': 0, 'synonym': 0}
+        for _, _, data in self.graph.edges(data=True):
+            et = data.get('edge_type', '')
+            if et in edge_type_counts:
+                edge_type_counts[et] += 1
+        graph_GRAPH['nun_hierarchical_edges'] = edge_type_counts['hierarchical']
+        graph_GRAPH['nun_paragraph_mention_edges'] = edge_type_counts['mention']
+        graph_GRAPH['num_entity_link_edges'] = edge_type_counts['link']
+        graph_GRAPH['num_fact_edges'] = edge_type_counts['fact']
+        graph_GRAPH['num_synonym_edges'] = edge_type_counts['synonym']
+        graph_GRAPH['num_total_edges'] = sum(edge_type_counts.values())
         return graph_GRAPH
 
     def add_node_to_paragraph_edge(self, entity_uuid, paragraph_uuid, relation="is mentioned in"):
@@ -450,13 +516,11 @@ class ReportKnowledgeGraph:
         """
         Function to add edge between entity and taxonomy concept.
         """
-        self.graph.add_edge(
-                    f"entity_{entity_uuid}",
-                    f"taxonomy_{concept_uuid}",
-                    weight = score, 
-                    edge_type = "link", 
-                    relationship = relation
-                )
+        entity_key = f"entity_{entity_uuid}"
+        concept_key = f"taxonomy_{concept_uuid}"
+        self.graph.add_edge(entity_key, concept_key, weight=score, edge_type="link", relationship=relation)
+        # Reverse edge so PPR signal can flow back from concept to entity
+        self.graph.add_edge(concept_key, entity_key, weight=score, edge_type="link", relationship="links to entity")
     
     def add_fact_edge(self, e1_uuid, e2_uuid, relation):
         """
@@ -553,15 +617,24 @@ class ReportKnowledgeGraph:
             query_fact_scores = self.get_fact_scores(query)
             top_k_fact_indices, top_k_facts, rerank_log = self.rerank_facts(query, query_fact_scores)
             print("[RERANK LOG]", rerank_log)
-            if len(top_k_facts) == 0:
-                logger.info('No facts found after reranking, return DPR results')
-                print("No facts found after reraning")
+            if self.retrieval_mode == "cosine_always":
                 top_triples.append(None)
                 sorted_doc_ids, sorted_doc_scores = self.dense_passage_retrieval(query)
-            else:
-                print("[TOP K FACTS]: ", top_k_facts)
-                top_triples.append(top_k_facts)
-                sorted_doc_ids, sorted_doc_scores = self.graph_search_with_fact_entities(query=query,
+            elif self.retrieval_mode == "ppr_always":
+                facts = top_k_facts if len(top_k_facts) > 0 else top_k_facts  # never fall back
+                top_triples.append(facts if len(facts) > 0 else None)
+                sorted_doc_ids, sorted_doc_scores = self.graph_search_with_fact_entities(
+                    query, self.link_top_k, query_fact_scores, facts, top_k_fact_indices, self.passage_node_weight)
+            else:  # "auto"
+                if len(top_k_facts) == 0:
+                    logger.info('No facts found after reranking, return DPR results')
+                    print("No facts found after reraning")
+                    top_triples.append(None)
+                    sorted_doc_ids, sorted_doc_scores = self.dense_passage_retrieval(query)
+                else:
+                    print("[TOP K FACTS]: ", top_k_facts)
+                    top_triples.append(top_k_facts)
+                    sorted_doc_ids, sorted_doc_scores = self.graph_search_with_fact_entities(query=query,
                                                                                          link_top_k=self.link_top_k,
                                                                                          query_fact_scores=query_fact_scores,
                                                                                          top_k_facts=top_k_facts,
@@ -577,7 +650,7 @@ class ReportKnowledgeGraph:
             
         # Evaluate retrieval
         if gold_docs is not None:
-            k_list = [1, 5, 10]
+            k_list = [1, 5, 10, 15]
             retrieved_docs=[retrieval_result.docs for retrieval_result in retrieval_results]
             retrieved_doc_ids=[retrieval_result.doc_ids for retrieval_result in retrieval_results]
             overall_reecall_result, example_recall_results = calculate_recall_k(gold_docs=gold_docs, retrieved_docs=retrieved_doc_ids, k_list=k_list)
@@ -871,18 +944,17 @@ class ReportKnowledgeGraph:
             fact_score = query_fact_scores[
                 top_k_fact_indices[rank]] if query_fact_scores.ndim > 0 else query_fact_scores
             for phrase in [subject_phrase, object_phrase]:
-                # phrase_key = compute_mdhash_id(
-                #     content=phrase,
-                #     prefix="entity_"
-                # )
-                phrase_key = self.entity_name_keys[phrase]
+                phrase_key = self.entity_name_keys.get(phrase, None)
+                if phrase_key is None:
+                    continue  # phrase not extracted as an entity in this report's graph
                 phrase_id = self.node_name_to_vertex_idx.get(phrase_key, None)
 
                 if phrase_id is not None:
                     phrase_weights[phrase_id] = fact_score
 
-                    if self.ent_node_to_num_chunk[phrase_key] != 0:
-                        phrase_weights[phrase_id] /= self.ent_node_to_num_chunk[phrase_key]
+                    num_chunks = self.ent_node_to_num_chunk.get(phrase_key, 0)
+                    if num_chunks != 0:
+                        phrase_weights[phrase_id] /= num_chunks
 
                 if phrase not in phrase_scores:
                     phrase_scores[phrase] = []
@@ -948,11 +1020,16 @@ class ReportKnowledgeGraph:
 
         candidate_facts = [eval(re.sub(r"(?<=\w)'s|(?<=\w)s'(?![),])", '', fact_row_dict[id]['content'])) for id in real_candidate_fact_ids]  # list of link_top_k facts (each fact is a relation triple in tuple data type)
         # candidate_facts = [eval(fact_row_dict[id]['content']) for id in real_candidate_fact_ids] 
-
-        top_k_fact_indices, top_k_facts, reranker_dict = self.rerank_filter(query,
+        
+        if self.use_llm_reranking:
+            top_k_fact_indices, top_k_facts, reranker_dict = self.rerank_filter(query,
                                                                              candidate_facts,
                                                                              candidate_fact_indices,
                                                                              len_after_rerank=link_top_k)
+        else:
+            top_k_fact_indices = candidate_fact_indices
+            top_k_facts = candidate_facts
+            reranker_dict = {'confidence': None}
 
         rerank_log = {'facts_before_rerank': candidate_facts, 'facts_after_rerank': top_k_facts}
 

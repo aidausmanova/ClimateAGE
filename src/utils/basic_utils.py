@@ -85,7 +85,11 @@ def get_gold_answers(samples):
             gold_ans = set(
                 [sample['obj']] + [sample['possible_answers']] + [sample['o_wiki_title']] + [sample['o_aliases']])
             gold_ans = list(gold_ans)
-        assert gold_ans is not None
+
+        if gold_ans is None:
+            print(f"[WARN] No answer field found in sample {sample_idx}, skipping gold answers for this dataset.")
+            return None
+
         if isinstance(gold_ans, str):
             gold_ans = [gold_ans]
         assert isinstance(gold_ans, list)

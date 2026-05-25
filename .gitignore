@@ -14,6 +14,8 @@ data/ifrs_index_llmdefin_NV-Embed-v2.json
 src/graph/kg_test.py
 src/bm25.py
 
+CLAUDE.md
+
 
 *.log
 

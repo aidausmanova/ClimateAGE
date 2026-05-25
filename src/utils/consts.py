@@ -2,7 +2,7 @@
 
 PATH = {
     "weakly_supervised": {
-        "path": "data/sustainable_qa/reports/" #"data/reports/extracted/" "data/sustainable_qa/reports/"
+        "path": "data/reports/extracted/" #"data/reports/extracted/" "data/sustainable_qa/reports/"
     },
     "RAG": {
         "vector_index": "data/ifrs_enriched_Llama70B_NVEmbedV2",

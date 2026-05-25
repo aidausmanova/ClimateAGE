@@ -99,7 +99,7 @@ class DSPyFilter:
             max_tokens=512
         )
 
-        if len(response) > 1:
+        if isinstance(response, list):
             return response[0]
         return response
 
@@ -115,6 +115,7 @@ class DSPyFilter:
         try:
             # prediction = self.program(question=query, fact_before_filter=json.dumps(fact_before_filter))
             response = self.llm_call(query, json.dumps(fact_before_filter))
+            print(f"[RERANK RAW RESPONSE] ({len(response) if response else 0} chars): {repr(response[:2000] if response else response)}")
             generated_facts = self.parse_filter(response)
         except Exception as e:
             print('exception', e)

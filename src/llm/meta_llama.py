@@ -360,20 +360,24 @@ class InfoExtractor:
                 output = self.model.chat.completions.create(**generate_params)
                 response = output.choices[0].message.content
                 metadata = {
-                    "prompt_tokens": output.usage.prompt_tokens, 
+                    "prompt_tokens": output.usage.prompt_tokens,
                     "completion_tokens": output.usage.completion_tokens,
                     "finish_reason": output.choices[0].finish_reason,
                 }
-            except:
+                print(f"[INFER openai] prompt_tokens={metadata['prompt_tokens']}, completion_tokens={metadata['completion_tokens']}, finish_reason={metadata['finish_reason']}")
+            except Exception as e:
+                print(f"[INFER openai] exception: {e}")
                 response = None
                 metadata = None
         elif self.load_type == 'vllm':
             # --------- VLLM --------
             prompt_ids = convert_text_chat_messages_to_input_ids(messages_list, self.tokenizer)
+            print(f"[INFER] prompt_token_ids type={type(prompt_ids)}, len={len(prompt_ids)}, inner_len={len(prompt_ids[0]) if prompt_ids and hasattr(prompt_ids[0],'__len__') else 'N/A'}")
             vllm_output = self.model.generate(prompt_token_ids=prompt_ids,  sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0))
             response = vllm_output[0].outputs[0].text
             prompt_tokens = len(vllm_output[0].prompt_token_ids)
-            completion_tokens = len(vllm_output[0].outputs[0].token_ids )
+            completion_tokens = len(vllm_output[0].outputs[0].token_ids)
+            print(f"[INFER] prompt_tokens={prompt_tokens}, completion_tokens={completion_tokens}, finish_reason={vllm_output[0].outputs[0].finish_reason}")
             metadata = {
                 "prompt_tokens": prompt_tokens,
                 "completion_tokens": completion_tokens
