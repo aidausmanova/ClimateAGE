@@ -72,6 +72,26 @@ Ablation confirms that taxonomy grounding provides consistent gains for semantic
 | BGE-large-en-v1.5 | 0.164 | 0.269 | 0.348 |
 | all-mpnet-base-v2 | 0.156 | 0.263 | 0.320 |
 
+Replacing NV-Embed-v2 with BGE-large-en-v1.5 dramatically drops the performance of the pipeline. The graph structure does not compensate for weaker embeddings. Hence, there is a need for domain fine-tuned embedding models.
+
+### Reproducibility
+
+All experiments were conducted on a server with two NVIDIA RTX A6000 GPUs
+(48GB VRAM each), 128GB RAM, and an AMD EPYC 7542 CPU. For entity extraction,
+we utilise Llama-3.1-70B-Instruct. As an embedding model in all steps, we use
+nvidia/Nv-Embed-v2 with default parameters. To construct a graph we used directed
+graphs with self loops (DiGraph) from NetworkX library. PPR damping factor is
+𝛼 = 0.5, following the established configuration of HippoRAG. The cosine similarity thresholds for entity linking (IsLinkedTo edges) and synonyms (IsSynonymOf edges)
+were set to the values that best ensure string semantic matching. The KNN neighbourhood
+size for synonym clustering is 𝑘 = 5. All results are reported from single runs, due to
+deterministic outputs of LLM inference calls.
+
+All datasets used in the experiments are publicly available research benchmarks
+(ClimRetrieve and SustainableQA). Each with licences permitting academic use.
+No new data were collected, all textual data was taken from the original datasets.
+In general, for a report with ∼150 passages, information extraction takes approximately
+25 minutes, while entity linking and evidence retrieval account for 2 minutes.
+
 ---------
 ### Setup
 1. Clone repository and setup environment
