@@ -1,11 +1,13 @@
 # Taxonomy-Populated Graph for Evidence Retrieval
 
 ### Abstract
-Detecting greenwashing requires locating specific evidence scattered across corporate sustainability reports (CSRs) that span hundreds of pages of technically and jargon dense text. 
-This is fundamentally an evidence retrieval problem. Yet standard embedding-based retrieval and Retrieval-Augmented Generation (RAG) fail to resolve the terminology gaps, boilerplate phrasing, and cross-paragraph dependencies that are common for regulatory disclosure documents.
-We present a taxonomy-populated graph-based retrieval method that embeds expert-curated disclosure taxonomy concepts directly as semantic anchors in a unified knowledge graph, bridging the gap between auditor query language and corporate disclosure language. 
-Evaluated on two sustainability reporting benchmarks, ClimRetrieve and SustainableQA, our method achieves 29.6% and 24.7% relative improvement in Recall@5 over the respective retrieval baselines. 
-Ablation confirms that taxonomy grounding provides consistent gains for semantically ambiguous audit queries, which are most relevant to greenwashing detection.
+Corporate sustainability reports are the medium for companies to communicate their environmental goals and are open for public scrutiny.
+Auditors, journalists, and civil society organisations must locate relevant disclosures despite mismatch in terminology between their questions and corporate reporting language, and despite evidence scattered across lengthy reports.
+We address this retrieval problem with a taxonomy-grounded graph retrieval method that connects audit terminology to corporate reporting language.
+The method embeds expert-curated IFRS Sustainability Disclosure Taxonomy concepts as semantic anchors in a graph of extracted entities and source paragraphs. 
+Evaluated on two datasets, ClimRetrieve and SustainableQA, the method achieves 29.6\% and 24.7\% Recall@5 relative gain.
+Ablation confirms that taxonomy grounding helps to disambiguate queries and improve evidence retrieval.
+This study presents domain-grounded information retrieval as a tool to support public scrutiny and highlights the conditions necessary for its practical benefit.
 
 ---------
 #### Average statistics on generated graphs.
