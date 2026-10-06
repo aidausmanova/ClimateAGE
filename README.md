@@ -1,4 +1,4 @@
-# Taxonomy-Populated Graph for Evidence Retrieval
+# Claims for Scrutiny: Taxonomy-Geounded Graph for Evidence Retrieval in Sustainability Reporting
 
 ### Abstract
 Corporate sustainability reports are the medium for companies to communicate their environmental goals and are open for public scrutiny.
