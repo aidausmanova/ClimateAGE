@@ -8,7 +8,7 @@ Evaluated on two sustainability reporting benchmarks, ClimRetrieve and Sustainab
 Ablation confirms that taxonomy grounding provides consistent gains for semantically ambiguous audit queries, which are most relevant to greenwashing detection.
 
 ---------
-#### Table 5. Average statistics on generated graphs.
+#### Average statistics on generated graphs.
 
 | Entity | Value |
 | --- | ---: |
@@ -25,7 +25,7 @@ Ablation confirms that taxonomy grounding provides consistent gains for semantic
 | Entity nodes with *IsLinkedTo* edges | 23.5% |
 | Entity nodes with *IsSynonymOf* edges | 27.7% |
 
-#### Table 6. Noun filtering threshold results.
+#### Noun filtering threshold results.
 
 | τ | R@1 | R@5 | R@10 | R@15 | N@10 | MRR |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -34,7 +34,7 @@ Ablation confirms that taxonomy grounding provides consistent gains for semantic
 | 0.55 | 0.170 | 0.498 | 0.702 | 0.749 | 0.546 | 0.612 |
 | 0.65 | 0.180 | 0.473 | 0.693 | 0.749 | 0.558 | 0.696 |
 
-#### Table 7. Entity-linking threshold results.
+#### Entity-linking threshold results.
 
 | τ | R@1 | R@5 | R@10 | N@10 | MRR | % linked |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -44,7 +44,7 @@ Ablation confirms that taxonomy grounding provides consistent gains for semantic
 | 0.60 | 0.126 | 0.391 | 0.517 | 0.413 | 0.495 | 8.2 |
 | 0.70 | 0.131 | 0.342 | 0.485 | 0.387 | 0.501 | 2.6 |
 
-#### Table 8. Synonym clustering threshold results.
+#### Synonym clustering threshold results.
 
 | τ | R@1 | R@5 | R@10 | R@15 | N@10 | MRR |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -55,16 +55,7 @@ Ablation confirms that taxonomy grounding provides consistent gains for semantic
 | 0.85 | 0.166 | 0.388 | 0.483 | 0.591 | 0.419 | 0.530 |
 | 0.90 | 0.162 | 0.388 | 0.483 | 0.591 | 0.413 | 0.511 |
 
-#### Table 9. Ablation study isolating the contribution of individual pipeline components on SustainableQA Factoid questions.
-
-| Configuration | Recall@1 | Recall@5 | Recall@10 | NDCG@5 | NDCG@10 | MRR |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| w/o taxonomy | 0.638 | 0.886 | 0.93 | 0.773 | 0.788 | 0.742 |
-| w/o *IsLinkedTo* edges | 0.6347 | 0.8948 | 0.9543 | 0.7769 | 0.7976 | 0.7462 |
-| w/o LLM judge | 0.3412 | 0.7661 | 0.9369 | 0.5556 | 0.6138 | 0.5125 |
-| PPR only | 0.6343 | 0.8940 | 0.9708 | 0.7764 | 0.7975 | 0.7460 |
-
-#### Table 10. Retrieval performance by embedding model on ClimRetrieve.
+#### Retrieval performance by embedding model on ClimRetrieve.
 
 | Embedding Model | R@5 | R@10 | R@15 |
 | --- | ---: | ---: | ---: |
